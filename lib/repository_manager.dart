@@ -1,11 +1,18 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/repository.dart';
 import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/settings/storage_config.dart';
 
 class RepositoryManager with ChangeNotifier {
   var repoIds = <String>[];
@@ -47,7 +54,7 @@ class RepositoryManager with ChangeNotifier {
     return pref.getString(id + "_" + FOLDER_NAME_KEY) ?? "journal";
   }
 
-  Future<String> addRepo() async {
+  Future<String> addRepoAndSwitch() async {
     int i = repoIds.length;
     while (repoIds.contains(i.toString())) {
       i++;
@@ -87,15 +94,16 @@ class RepositoryManager with ChangeNotifier {
   }
 
   Future<void> deleteCurrent() async {
-    if (repoIds.length == 1) {
-      throw Exception("Last Repo cannot be deleted");
-    }
-
     Log.i("Deleting repo: $currentId");
 
     var i = repoIds.indexOf(currentId);
     await _repo.delete();
     repoIds.removeAt(i);
+
+    if (repoIds.isEmpty) {
+      var _ = await addRepoAndSwitch();
+      return;
+    }
 
     i = i.clamp(0, repoIds.length - 1);
     currentId = repoIds[i];

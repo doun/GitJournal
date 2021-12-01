@@ -1,8 +1,14 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:path/path.dart';
 import 'package:test/test.dart';
+import 'package:universal_io/io.dart';
 
 import 'package:gitjournal/apis/githost_factory.dart';
 import 'package:gitjournal/apis/github.dart';
@@ -24,11 +30,11 @@ void main() {
 
     List<dynamic> list = jsonDecode(jsonString);
     var repos = <GitHostRepo>[];
-    list.forEach((dynamic d) {
+    for (var d in list) {
       var map = Map<String, dynamic>.from(d);
       var repo = GitHub.repoFromJson(map);
       repos.add(repo);
-    });
+    }
 
     expect(repos.length, 2);
   });

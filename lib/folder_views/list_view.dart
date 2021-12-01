@@ -1,39 +1,50 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 
+import 'package:gitjournal/core/folder/notes_folder.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder.dart';
 import 'package:gitjournal/repository.dart';
 import 'package:gitjournal/settings/settings.dart';
 import 'package:gitjournal/utils/utils.dart';
 import 'package:gitjournal/widgets/icon_dismissable.dart';
 import 'empty_text_sliver.dart';
 
-typedef Widget NoteTileBuilder(BuildContext context, Note note);
+typedef NoteTileBuilder = Widget Function(
+  BuildContext context,
+  Note note,
+  bool isSelected,
+);
 
 class FolderListView extends StatefulWidget {
   final NoteTileBuilder noteTileBuilder;
   final NoteBoolPropertyFunction isNoteSelected;
   final NotesFolder folder;
-  final String emptyText;
+  final String? emptyText;
   final String searchTerm;
 
-  FolderListView({
+  const FolderListView({
     required this.folder,
     required this.noteTileBuilder,
     required this.emptyText,
     required this.isNoteSelected,
     required this.searchTerm,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   _FolderListViewState createState() => _FolderListViewState();
 }
 
 class _FolderListViewState extends State<FolderListView> {
-  var _listKey = GlobalKey<AnimatedListState>();
+  final _listKey = GlobalKey<SliverAnimatedListState>();
   var deletedViaDismissed = <String>[];
 
   @override
@@ -71,6 +82,7 @@ class _FolderListViewState extends State<FolderListView> {
   }
 
   void _noteAdded(int index, Note _) {
+    assert(index != -1);
     if (_listKey.currentState == null) {
       return;
     }
@@ -78,6 +90,7 @@ class _FolderListViewState extends State<FolderListView> {
   }
 
   void _noteRemoved(int index, Note note) {
+    assert(index != -1);
     if (_listKey.currentState == null) {
       return;
     }
@@ -86,7 +99,7 @@ class _FolderListViewState extends State<FolderListView> {
       if (i == -1) {
         return _buildNote(note, widget.isNoteSelected(note), animation);
       } else {
-        deletedViaDismissed.removeAt(i);
+        var _ = deletedViaDismissed.removeAt(i);
         return Container();
       }
     });
@@ -99,13 +112,20 @@ class _FolderListViewState extends State<FolderListView> {
   @override
   Widget build(BuildContext context) {
     if (widget.folder.isEmpty) {
-      return EmptyTextSliver(emptyText: widget.emptyText);
+      if (widget.emptyText != null) {
+        return EmptyTextSliver(emptyText: widget.emptyText!);
+      } else {
+        return const SliverToBoxAdapter(child: SizedBox());
+      }
     }
 
-    return SliverAnimatedList(
-      key: _listKey,
-      itemBuilder: _buildItem,
-      initialItemCount: widget.folder.notes.length,
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 12.0 + 48.0),
+      sliver: SliverAnimatedList(
+        key: _listKey,
+        itemBuilder: _buildItem,
+        initialItemCount: widget.folder.notes.length,
+      ),
     );
   }
 
@@ -127,7 +147,7 @@ class _FolderListViewState extends State<FolderListView> {
     var settings = Provider.of<Settings>(context);
     Widget viewItem = Hero(
       tag: note.filePath,
-      child: widget.noteTileBuilder(context, note),
+      child: widget.noteTileBuilder(context, note, selected),
       flightShuttleBuilder: (BuildContext flightContext,
               Animation<double> animation,
               HeroFlightDirection flightDirection,
@@ -153,16 +173,6 @@ class _FolderListViewState extends State<FolderListView> {
             ..removeCurrentSnackBar()
             ..showSnackBar(snackBar);
         },
-      );
-    }
-
-    if (selected) {
-      var borderColor = Theme.of(context).accentColor;
-      viewItem = Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: borderColor, width: selected ? 2.0 : 1.0),
-        ),
-        child: viewItem,
       );
     }
 

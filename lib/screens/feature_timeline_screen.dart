@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -6,15 +12,18 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:gitjournal/analytics/analytics.dart';
 import 'package:gitjournal/features.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
 
 class FeatureTimelineScreen extends StatelessWidget {
+  const FeatureTimelineScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     var theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(tr('feature_timeline.title')),
+        title: Text(tr(LocaleKeys.feature_timeline_title)),
       ),
       body: ListView(
         children: [
@@ -22,16 +31,16 @@ class FeatureTimelineScreen extends StatelessWidget {
           for (var title in Features.inProgress)
             _Tile(
               title: title,
-              subTitle: tr('feature_timeline.progress'),
+              subTitle: tr(LocaleKeys.feature_timeline_progress),
               iconText: "DEV",
               iconColor: theme.primaryColorDark,
             ),
           for (var title in Features.planned)
             _Tile(
               title: title,
-              subTitle: tr('feature_timeline.plan'),
+              subTitle: tr(LocaleKeys.feature_timeline_plan),
               iconText: "PLAN",
-              iconColor: theme.accentColor,
+              iconColor: theme.colorScheme.secondary,
             ),
           _DevelopmentText(),
         ],
@@ -43,7 +52,7 @@ class FeatureTimelineScreen extends StatelessWidget {
 class FeatureTile extends StatelessWidget {
   final Feature feature;
 
-  FeatureTile(this.feature);
+  const FeatureTile(this.feature, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +63,7 @@ class FeatureTile extends StatelessWidget {
     }
 
     var theme = Theme.of(context);
-    var color = theme.accentColor;
+    var color = theme.colorScheme.secondary;
 
     if (feature.pro) {
       if (theme.brightness == Brightness.light) {
@@ -77,7 +86,7 @@ class _Tile extends StatelessWidget {
   final String iconText;
   final Color iconColor;
 
-  _Tile({
+  const _Tile({
     required this.title,
     required this.subTitle,
     required this.iconText,
@@ -100,7 +109,7 @@ class _Tile extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Container(
+          SizedBox(
             width: 56.0,
             child: _Sign(iconText, iconColor),
           ),
@@ -135,7 +144,7 @@ class _Sign extends StatelessWidget {
   final String text;
   final Color? color;
 
-  _Sign(this.text, this.color);
+  const _Sign(this.text, this.color);
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +166,7 @@ class _DevelopmentText extends StatelessWidget {
   Widget build(BuildContext context) {
     var style = Theme.of(context).textTheme.bodyText2;
 
-    var str = tr('feature_timeline.issues');
+    var str = tr(LocaleKeys.feature_timeline_issues);
     var i = str.toLowerCase().indexOf('github');
     if (i == -1) {
       return Padding(
@@ -189,7 +198,7 @@ class _DevelopmentText extends StatelessWidget {
       style: const TextStyle(color: Colors.blue),
       recognizer: TapGestureRecognizer()
         ..onTap = () {
-          launch(githubUrl);
+          var _ = launch(githubUrl);
           logEvent(Event.FeatureTimelineGithubClicked);
         },
     );

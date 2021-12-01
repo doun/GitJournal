@@ -1,5 +1,11 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import 'package:gitjournal/core/folder/notes_folder.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder.dart';
 
 class WikiLinksAutoAddProcessor {
   final NotesFolder rootFolder;

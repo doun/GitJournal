@@ -1,3 +1,12 @@
+# SPDX-FileCopyrightText: 2019-2021 Afonso. carlos. braga <afonso.carlos.braga@gmail.com>
+# SPDX-FileCopyrightText: 2019-2021 Ivyl2007 <ivyl2007@gmail.com>
+# SPDX-FileCopyrightText: 2019-2021 Myreli <myreli@pm.me>
+# SPDX-FileCopyrightText: 2019-2021 Myreli Borba <borbamyreli@gmail.com>
+# SPDX-FileCopyrightText: 2019-2021 Ocimar <ocimarmota13@gmail.com>
+# SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 # Polish translation  by Witold Firlej (grizz) https://grizz.pl https://github.com/grizz-pl
 settings:
   ok: Ok
@@ -5,17 +14,14 @@ settings:
   title: Configurações
   author:
     label: Nome Completo
-    hint: Quem deveria criar as mudanças?
     validator: Por favor, insira um nome
   email:
     label: Email
-    hint: Endereço de Email
     validator:
       empty: Por favor, insira um email
       invalid: Por favor, insira um email válido
   display:
     title: Configurações de Tela
-    darkTheme: Tema Escuro
     homeScreen: Tela Inicial
     theme: Theme
     images:
@@ -91,6 +97,7 @@ settings:
           'on': true
         vectorGraphics: Vector Graphics (.svg)
         vectorGraphicsAdjustColors: Colors to Adjust
+    lang: Language
   gitAuthor: Configurações de Autor do Git
   versionInfo: Informação de Versão
   analytics: Análises
@@ -106,6 +113,7 @@ settings:
       info: Info
       debug: Debug
       verbose: Verbose
+    copy: Debug Logs Copied
   images:
     title: Configurações de Imagem
     subtitle: Configurar como as Imagens são armazenadas
@@ -144,19 +152,20 @@ settings:
     customMetaData:
       title: Metadada Personalizada
       invalid: YAML Inválido
+    output: Output
+    input: Input
   privacy: Política de Privacidade
   terms: Termos e Condições
   experimental:
     title: Recursos Experimentais
     subtitle: Testar funcionalidades em Desenvolvimento
-    backlinks: Show Backlinks in Markdown Preview
-    fs: Show File System
     markdownToolbar: Mostrar Barra de Ferramentas de Markdown no Editor
     graphView: Graph View
     accounts: Platform Independent Accounts
     includeSubfolders: Include Subfolders
     experimentalGitOps: Dart-only Git implementation
     merge: Dart-only merge implementation
+    autoCompleteTags: Tags Auto Completion
   editors:
     title: Configurações do Editor
     subtitle: Configurar quão diferente os editores trabalham
@@ -169,6 +178,7 @@ settings:
     rawEditor: Raw Editor
     choose: Choose Editor
     orgEditor: Org Editor
+    defaultNoteFormat: Default Note Format
   sortingField:
     modified: Última modificação
     created: Criado
@@ -194,13 +204,13 @@ settings:
     listView: List View
     confirmDelete: Show a Popup to Confirm Deletes
     hardWrap: Enable hardWrap
+    emoji: Emojify text
   NoteFileNameFormat:
     iso8601WithTimeZone: ISO8601 com Fuso Horário
     iso8601: ISO8601
     iso8601WithoutColon: ISO8601 sem ponto vírgula
     title: Título
     uuid: Uuid V4
-    simmple: aaaa-mm-dd-hh-mm-ss
     zettelkasten: aaaammddhhmmss
     simple: yyyy-mm-dd-hh-mm-ss
     dateOnly: yyyy-mm-dd
@@ -229,6 +239,8 @@ settings:
     external: Store Repo Externally
     icloud: Store in iCloud
     repoLocation: Repo Location
+    notWritable: "{} is not writable"
+    failedExternal: Unable to get External Storage Directory
   drawer:
     title: Sidebar Settings
   bottomMenuBar:
@@ -236,6 +248,10 @@ settings:
     subtitle: Configure its appearance and behavior
     enable: Enable Bottom Menu Bar
   deleteRepo: Delete Repository
+  fileFormat:
+    markdown: Markdown
+    txt: Txt
+    orgMode: Org Mode
 editors:
   checklist:
     add: Adicionar Item
@@ -254,6 +270,8 @@ editors:
     saveNoteFailed:
       title: Falha ao Salvar Nota
       message: Desculpe, mas não conseguimos salvar a Nota. Ela foi copiada para a Área de Transferencia para evitar perda de dados
+    defaultFileNameHint: File Name
+    find: Find in note
 pro: Pro
 actions:
   newNote: Nova Nota
@@ -313,7 +331,6 @@ widgets:
     failSend: Failed to send purchase request
     failPurchase: Failed to Purchase - {}
   FolderView:
-    noteSelected: Nota Selecionada
     syncError: Sync Error {}
     headerOptions:
       heading: Opções de Cabeçaho
@@ -333,6 +350,10 @@ widgets:
     noteDeleted: Note Deleted
     undo: Undo
     searchFailed: No Search Results Found
+    actions:
+      moveToFolder: Move To Folder
+    pinned: Pinned
+    others: Others
   imageRenderer:
     caption: "{first} - {second}"
     httpError: "Code: {status} for {url}"
@@ -370,6 +391,8 @@ drawer:
   graph: Graph View
   remote: No Git Host
   addRepo: Add Repository
+  login: Login
+  history: History
 setup:
   autoConfigure:
     title: Como você quer fazer isso?
@@ -426,7 +449,7 @@ setup:
   sshKeyUserProvided:
     public: "Chave Publica - "
     private: Chave Privada -
-    password: Password
+    password: Private Key Password
   cloning: Clonando...
   host:
     title: Select a Git Hosting Provider -
@@ -491,7 +514,7 @@ feature_timeline:
   issues: GitJournal's development is tracked on Github. Please consider voting on the issues you consider important.
 purchase_screen:
   title: Versão Pro
-  desc: GitJournal is completely open source and is the result of significant development work. It has no venture capital or corporation backing and it never will. Your support directly sustains development.   GitJournal operates on a "pay what you want model (with a minimum)".
+  desc: 'GitJournal is completely open source and is the result of significant development work. It has no venture capital or corporation backing and it never will. Your support directly sustains development.   GitJournal operates on a "pay what you want model (with a minimum)".'
   restore: Restore Purchase
   oneTime:
     title: One Time Purchase
@@ -509,4 +532,4 @@ OnBoarding:
   subtitle: 'An Open Source Note Taking App built on top of Git'
   page2: 'Your Notes are stored in a standard Markdown + YAML Header format'
   page3: 'Sync your Local Git Repo with any provider'
-0: ""
+beta: BETA

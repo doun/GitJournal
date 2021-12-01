@@ -1,26 +1,37 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:git_bindings/git_bindings.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gitjournal/app.dart';
+import 'package:gitjournal/analytics/analytics.dart';
+import 'package:gitjournal/app_router.dart';
+import 'package:gitjournal/core/folder/flattened_filtered_notes_folder.dart';
+import 'package:gitjournal/core/folder/notes_folder.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
+import 'package:gitjournal/core/folder/sorted_notes_folder.dart';
+import 'package:gitjournal/core/folder/sorting_mode.dart';
 import 'package:gitjournal/core/md_yaml_doc_codec.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder.dart';
-import 'package:gitjournal/core/notes_folder_fs.dart';
-import 'package:gitjournal/core/sorted_notes_folder.dart';
-import 'package:gitjournal/core/sorting_mode.dart';
 import 'package:gitjournal/editors/common_types.dart';
+import 'package:gitjournal/editors/note_editor.dart';
 import 'package:gitjournal/folder_views/common.dart';
 import 'package:gitjournal/folder_views/standard_view.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
 import 'package:gitjournal/repository.dart';
-import 'package:gitjournal/screens/note_editor.dart';
 import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/settings/settings_screen.dart';
+import 'package:gitjournal/settings/widgets/settings_header.dart';
 import 'package:gitjournal/utils/utils.dart';
 import 'package:gitjournal/widgets/app_bar_menu_button.dart';
 import 'package:gitjournal/widgets/app_drawer.dart';
+import 'package:gitjournal/widgets/folder_selection_dialog.dart';
 import 'package:gitjournal/widgets/new_note_nav_bar.dart';
 import 'package:gitjournal/widgets/note_delete_dialog.dart';
 import 'package:gitjournal/widgets/note_search_delegate.dart';
@@ -32,11 +43,15 @@ enum DropDownChoices {
   ViewOptions,
 }
 
+enum NoteSelectedExtraActions {
+  MoveToFolder,
+}
+
 class FolderView extends StatefulWidget {
   final NotesFolder notesFolder;
   final Map<String, dynamic> newNoteExtraProps;
 
-  FolderView({
+  const FolderView({
     required this.notesFolder,
     this.newNoteExtraProps = const {},
   });
@@ -46,14 +61,15 @@ class FolderView extends StatefulWidget {
 }
 
 class _FolderViewState extends State<FolderView> {
-  late SortedNotesFolder sortedNotesFolder;
+  SortedNotesFolder? sortedNotesFolder;
+  SortedNotesFolder? pinnedNotesFolder;
   FolderViewType _viewType = FolderViewType.Standard;
 
   var _headerType = StandardViewHeader.TitleGenerated;
   bool _showSummary = true;
 
-  bool inSelectionMode = false;
-  Note? selectedNote;
+  var selectedNotes = <Note>[];
+  bool get inSelectionMode => selectedNotes.isNotEmpty;
 
   @override
   void initState() {
@@ -61,15 +77,41 @@ class _FolderViewState extends State<FolderView> {
     _init();
   }
 
-  void _init() {
-    sortedNotesFolder = SortedNotesFolder(
-      folder: widget.notesFolder,
+  Future<void> _init() async {
+    _viewType = widget.notesFolder.config.defaultView.toFolderViewType();
+    _showSummary = widget.notesFolder.config.showNoteSummary;
+    _headerType = widget.notesFolder.config.viewHeader;
+
+    var otherNotesFolder = SortedNotesFolder(
+      folder: await FlattenedFilteredNotesFolder.load(
+        widget.notesFolder,
+        title: LocaleKeys.widgets_FolderView_pinned,
+        filter: (Note note) async => !note.pinned,
+      ),
       sortingMode: widget.notesFolder.config.sortingMode,
     );
 
-    _viewType = widget.notesFolder.config.defaultView;
-    _showSummary = widget.notesFolder.config.showNoteSummary;
-    _headerType = widget.notesFolder.config.viewHeader;
+    var pinnedFolder = SortedNotesFolder(
+      folder: await FlattenedFilteredNotesFolder.load(
+        widget.notesFolder,
+        title: LocaleKeys.widgets_FolderView_pinned,
+        filter: (Note note) async => note.pinned,
+      ),
+      sortingMode: widget.notesFolder.config.sortingMode,
+    );
+
+    setState(() {
+      sortedNotesFolder = otherNotesFolder;
+      pinnedNotesFolder = pinnedFolder;
+    });
+  }
+
+  @override
+  void dispose() {
+    sortedNotesFolder?.dispose();
+    pinnedNotesFolder?.dispose();
+
+    super.dispose();
   }
 
   @override
@@ -82,34 +124,38 @@ class _FolderViewState extends State<FolderView> {
   }
 
   Widget _buildBody(BuildContext context) {
+    if (sortedNotesFolder == null) {
+      return Container();
+    }
     var title = widget.notesFolder.publicName;
     if (inSelectionMode) {
-      title = NumberFormat.compact().format(1);
+      title = NumberFormat.compact().format(selectedNotes.length);
     }
 
     var folderView = buildFolderView(
       viewType: _viewType,
-      folder: sortedNotesFolder,
-      emptyText: tr('screens.folder_view.empty'),
+      folder: sortedNotesFolder!,
+      emptyText: tr(LocaleKeys.screens_folder_view_empty),
       header: _headerType,
       showSummary: _showSummary,
-      noteTapped: (Note note) {
-        if (!inSelectionMode) {
-          openNoteEditor(context, note, widget.notesFolder);
-        } else {
-          _resetSelection();
-        }
-      },
-      noteLongPressed: (Note note) {
-        setState(() {
-          inSelectionMode = true;
-          selectedNote = note;
-        });
-      },
-      isNoteSelected: (n) => n == selectedNote,
-      searchTerm: "",
+      noteTapped: _noteTapped,
+      noteLongPressed: _noteLongPress,
+      isNoteSelected: (n) => selectedNotes.contains(n),
     );
-    // assert(folderView is SliverWithKeepAliveWidget);
+
+    Widget pinnedFolderView = const SizedBox();
+    if (pinnedNotesFolder != null) {
+      pinnedFolderView = buildFolderView(
+        viewType: _viewType,
+        folder: pinnedNotesFolder!,
+        emptyText: null,
+        header: _headerType,
+        showSummary: _showSummary,
+        noteTapped: _noteTapped,
+        noteLongPressed: _noteLongPress,
+        isNoteSelected: (n) => selectedNotes.contains(n),
+      );
+    }
 
     var settings = Provider.of<Settings>(context);
     final showButtomMenuBar = settings.bottomMenuBar;
@@ -127,6 +173,9 @@ class _FolderViewState extends State<FolderView> {
       onPressed: _resetSelection,
     );
 
+    var havePinnedNotes =
+        pinnedNotesFolder != null ? !pinnedNotesFolder!.isEmpty : false;
+
     return NestedScrollView(
       headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
         return [
@@ -141,26 +190,71 @@ class _FolderViewState extends State<FolderView> {
         ];
       },
       floatHeaderSlivers: true,
-      body: Scrollbar(
-        child: Builder(builder: (context) {
-          var view = CustomScrollView(slivers: [folderView]);
-          if (settings.remoteSyncFrequency == RemoteSyncFrequency.Manual) {
-            return view;
-          }
-          return RefreshIndicator(
-            onRefresh: () => _syncRepo(context),
-            child: view,
-          );
-        }),
+      // Stupid scrollbar has a top padding otherwise
+      // - from : https://stackoverflow.com/questions/64404873/remove-the-top-padding-from-scrollbar-when-wrapping-listview
+      body: MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        child: Scrollbar(
+          child: Builder(builder: (context) {
+            var view = CustomScrollView(slivers: [
+              if (havePinnedNotes)
+                _SliverHeader(text: LocaleKeys.widgets_FolderView_pinned.tr()),
+              if (havePinnedNotes) pinnedFolderView,
+              if (havePinnedNotes)
+                _SliverHeader(text: LocaleKeys.widgets_FolderView_others.tr()),
+              folderView,
+            ]);
+            if (settings.remoteSyncFrequency == RemoteSyncFrequency.Manual) {
+              return view;
+            }
+            return RefreshIndicator(
+              onRefresh: () => _syncRepo(context),
+              child: view,
+            );
+          }),
+        ),
       ),
     );
+  }
+
+  void _noteLongPress(Note note) {
+    var i = selectedNotes.indexOf(note);
+    if (i != -1) {
+      setState(() {
+        var _ = selectedNotes.removeAt(i);
+      });
+    } else {
+      setState(() {
+        selectedNotes.add(note);
+      });
+    }
+  }
+
+  void _noteTapped(Note note) {
+    if (!inSelectionMode) {
+      openNoteEditor(context, note, widget.notesFolder);
+      return;
+    }
+
+    var i = selectedNotes.indexOf(note);
+    if (i != -1) {
+      setState(() {
+        var _ = selectedNotes.removeAt(i);
+      });
+    } else {
+      setState(() {
+        selectedNotes.add(note);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     var createButton = FloatingActionButton(
       key: const ValueKey("FAB"),
-      onPressed: () => _newPost(widget.notesFolder.config.defaultEditor),
+      onPressed: () =>
+          _newPost(widget.notesFolder.config.defaultEditor.toEditorType()),
       child: const Icon(Icons.add),
     );
 
@@ -186,37 +280,52 @@ class _FolderViewState extends State<FolderView> {
     } on GitException catch (e) {
       showSnackbar(
         context,
-        tr('widgets.FolderView.syncError', args: [e.cause]),
+        tr(LocaleKeys.widgets_FolderView_syncError, args: [e.cause]),
       );
     } catch (e) {
       showSnackbar(context, e.toString());
     }
   }
 
-  void _newPost(EditorType editorType) async {
+  Future<void> _newPost(EditorType editorType) async {
+    var settings = Provider.of<Settings>(context, listen: false);
+    var rootFolder = Provider.of<NotesFolderFS>(context, listen: false);
+
     var folder = widget.notesFolder;
     var fsFolder = folder.fsFolder as NotesFolderFS;
     var isVirtualFolder = folder.name != folder.fsFolder!.name;
-    if (isVirtualFolder) {
-      var rootFolder = Provider.of<NotesFolderFS>(context, listen: false);
-      var settings = Provider.of<Settings>(context, listen: false);
 
+    if (isVirtualFolder) {
       fsFolder = getFolderForEditor(settings, rootFolder, editorType);
     }
 
-    var settings = Provider.of<Settings>(context, listen: false);
+    if (editorType == EditorType.Journal) {
+      if (settings.journalEditordefaultNewNoteFolderSpec.isNotEmpty) {
+        var spec = settings.journalEditordefaultNewNoteFolderSpec;
+        fsFolder = rootFolder.getFolderWithSpec(spec) ?? rootFolder;
 
-    if (editorType == EditorType.Journal && settings.journalEditorSingleNote) {
-      var note = await getTodayJournalEntry(fsFolder.rootFolder);
-      if (note != null) {
-        return openNoteEditor(
-          context,
-          note,
-          widget.notesFolder,
-          editMode: true,
-        );
+        if (!isVirtualFolder) {
+          showSnackbar(
+            context,
+            LocaleKeys.settings_editors_journalDefaultFolderSelect
+                .tr(args: [spec]),
+          );
+        }
+      }
+
+      if (settings.journalEditorSingleNote) {
+        var note = await getTodayJournalEntry(fsFolder.rootFolder);
+        if (note != null) {
+          return openNoteEditor(
+            context,
+            note,
+            fsFolder,
+            editMode: true,
+          );
+        }
       }
     }
+
     var routeType =
         SettingsEditorType.fromEditorType(editorType).toInternalString();
 
@@ -227,47 +336,48 @@ class _FolderViewState extends State<FolderView> {
         extraProps[key] = val;
       });
     }
-    var route = MaterialPageRoute(
-      builder: (context) => NoteEditor.newNote(
+    var route = newNoteRoute(
+      NoteEditor.newNote(
         fsFolder,
         widget.notesFolder,
         editorType,
         newNoteExtraProps: extraProps,
         existingText: "",
-        existingImages: [],
+        existingImages: const [],
       ),
-      settings: RouteSettings(name: '/newNote/$routeType'),
+      AppRoute.NewNotePrefix + routeType,
     );
-    await Navigator.of(context).push(route);
+    var _ = await Navigator.push(context, route);
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
   }
 
-  void _sortButtonPressed() async {
+  Future<void> _sortButtonPressed() async {
+    if (sortedNotesFolder == null) {
+      return;
+    }
     var newSortingMode = await showDialog<SortingMode>(
       context: context,
       builder: (BuildContext context) =>
-          SortingModeSelector(sortedNotesFolder.sortingMode),
+          SortingModeSelector(sortedNotesFolder!.sortingMode),
     );
 
     if (newSortingMode != null) {
-      var config = sortedNotesFolder.config.copyWith(
-        sortingMode: newSortingMode,
-      );
-
-      var settings = Provider.of<Settings>(context, listen: false);
-      config.saveToSettings(settings);
+      var folderConfig = sortedNotesFolder!.config;
+      folderConfig.sortingField = newSortingMode.field;
+      folderConfig.sortingOrder = newSortingMode.order;
+      folderConfig.save();
 
       setState(() {
-        sortedNotesFolder.changeSortingMode(newSortingMode);
+        sortedNotesFolder!.changeSortingMode(newSortingMode);
       });
     }
   }
 
-  void _configureViewButtonPressed() async {
-    await showDialog<SortingMode>(
+  Future<void> _configureViewButtonPressed() async {
+    var _ = await showDialog<SortingMode>(
       context: context,
       builder: (BuildContext context) {
-        var headerTypeChanged = (StandardViewHeader? newHeader) {
+        void headerTypeChanged(StandardViewHeader? newHeader) {
           if (newHeader == null) {
             return;
           }
@@ -275,34 +385,29 @@ class _FolderViewState extends State<FolderView> {
             _headerType = newHeader;
           });
 
-          var config = sortedNotesFolder.config.copyWith(
-            viewHeader: _headerType,
-          );
+          var folderConfig = sortedNotesFolder!.config;
+          folderConfig.viewHeader = _headerType;
+          folderConfig.save();
+        }
 
-          var settings = Provider.of<Settings>(context, listen: false);
-          config.saveToSettings(settings);
-        };
-
-        var summaryChanged = (bool newVal) {
+        void summaryChanged(bool newVal) {
           setState(() {
             _showSummary = newVal;
           });
 
-          var config = sortedNotesFolder.config.copyWith(
-            showNoteSummary: newVal,
-          );
-
-          var settings = Provider.of<Settings>(context, listen: false);
-          config.saveToSettings(settings);
-        };
+          var folderConfig = sortedNotesFolder!.config;
+          folderConfig.showNoteSummary = newVal;
+          folderConfig.save();
+        }
 
         return StatefulBuilder(
-          builder: (BuildContext context, Function setState) {
+          builder: (BuildContext context, setState) {
             var children = <Widget>[
-              SettingsHeader(tr('widgets.FolderView.headerOptions.heading')),
+              SettingsHeader(
+                  tr(LocaleKeys.widgets_FolderView_headerOptions_heading)),
               RadioListTile<StandardViewHeader>(
-                title:
-                    Text(tr('widgets.FolderView.headerOptions.titleFileName')),
+                title: Text(tr(
+                    LocaleKeys.widgets_FolderView_headerOptions_titleFileName)),
                 value: StandardViewHeader.TitleOrFileName,
                 groupValue: _headerType,
                 onChanged: (newVal) {
@@ -311,7 +416,8 @@ class _FolderViewState extends State<FolderView> {
                 },
               ),
               RadioListTile<StandardViewHeader>(
-                title: Text(tr('widgets.FolderView.headerOptions.auto')),
+                title:
+                    Text(tr(LocaleKeys.widgets_FolderView_headerOptions_auto)),
                 value: StandardViewHeader.TitleGenerated,
                 groupValue: _headerType,
                 onChanged: (newVal) {
@@ -321,7 +427,8 @@ class _FolderViewState extends State<FolderView> {
               ),
               RadioListTile<StandardViewHeader>(
                 key: const ValueKey("ShowFileNameOnly"),
-                title: Text(tr('widgets.FolderView.headerOptions.fileName')),
+                title: Text(
+                    tr(LocaleKeys.widgets_FolderView_headerOptions_fileName)),
                 value: StandardViewHeader.FileName,
                 groupValue: _headerType,
                 onChanged: (newVal) {
@@ -331,7 +438,8 @@ class _FolderViewState extends State<FolderView> {
               ),
               SwitchListTile(
                 key: const ValueKey("SummaryToggle"),
-                title: Text(tr('widgets.FolderView.headerOptions.summary')),
+                title: Text(
+                    tr(LocaleKeys.widgets_FolderView_headerOptions_summary)),
                 value: _showSummary,
                 onChanged: (bool newVal) {
                   setState(() {
@@ -345,11 +453,12 @@ class _FolderViewState extends State<FolderView> {
             return AlertDialog(
               title: GestureDetector(
                 key: const ValueKey("Hack_Back"),
-                child: Text(tr('widgets.FolderView.headerOptions.customize')),
+                child: Text(
+                    tr(LocaleKeys.widgets_FolderView_headerOptions_customize)),
                 onTap: () {
                   // Hack to get out of the dialog in the tests
                   // driver.findByType('ModalBarrier') doesn't seem to be working
-                  if (JournalApp.isInDebugMode) {
+                  if (foundation.kDebugMode) {
                     Navigator.of(context).pop();
                   }
                 },
@@ -369,41 +478,47 @@ class _FolderViewState extends State<FolderView> {
     setState(() {});
   }
 
-  void _folderViewChooserSelected() async {
-    var onViewChange = (FolderViewType? vt) => Navigator.of(context).pop(vt);
+  Future<void> _folderViewChooserSelected() async {
+    void onViewChange(FolderViewType? vt) => Navigator.of(context).pop(vt);
 
     var newViewType = await showDialog<FolderViewType>(
       context: context,
       builder: (BuildContext context) {
         var children = <Widget>[
           RadioListTile<FolderViewType>(
-            title: Text(tr('widgets.FolderView.views.standard')),
+            title: Text(tr(LocaleKeys.widgets_FolderView_views_standard)),
             value: FolderViewType.Standard,
             groupValue: _viewType,
             onChanged: onViewChange,
           ),
           RadioListTile<FolderViewType>(
-            title: Text(tr('widgets.FolderView.views.journal')),
+            title: Text(tr(LocaleKeys.widgets_FolderView_views_journal)),
             value: FolderViewType.Journal,
             groupValue: _viewType,
             onChanged: onViewChange,
           ),
           RadioListTile<FolderViewType>(
-            title: Text(tr('widgets.FolderView.views.grid')),
+            title: Text(tr(LocaleKeys.widgets_FolderView_views_grid)),
             value: FolderViewType.Grid,
             groupValue: _viewType,
             onChanged: onViewChange,
           ),
           RadioListTile<FolderViewType>(
-            title: Text(tr('widgets.FolderView.views.card')),
+            title: Text(tr(LocaleKeys.widgets_FolderView_views_card)),
             value: FolderViewType.Card,
             groupValue: _viewType,
             onChanged: onViewChange,
           ),
+          // RadioListTile<FolderViewType>(
+          //   title: Text(tr(LocaleKeys.widgets_FolderView_views_calendar)),
+          //   value: FolderViewType.Calendar,
+          //   groupValue: _viewType,
+          //   onChanged: onViewChange,
+          // ),
         ];
 
         return AlertDialog(
-          title: Text(tr('widgets.FolderView.views.select')),
+          title: Text(tr(LocaleKeys.widgets_FolderView_views_select)),
           content: Column(
             children: children,
             mainAxisSize: MainAxisSize.min,
@@ -417,12 +532,10 @@ class _FolderViewState extends State<FolderView> {
         _viewType = newViewType;
       });
 
-      var config = widget.notesFolder.config.copyWith(
-        defaultView: newViewType,
-      );
-
-      var settings = Provider.of<Settings>(context, listen: false);
-      config.saveToSettings(settings);
+      var folderConfig = widget.notesFolder.config;
+      folderConfig.defaultView =
+          SettingsFolderViewType.fromFolderViewType(newViewType);
+      folderConfig.save();
     }
   }
 
@@ -446,13 +559,13 @@ class _FolderViewState extends State<FolderView> {
         PopupMenuItem<DropDownChoices>(
           key: const ValueKey("SortingOptions"),
           value: DropDownChoices.SortingOptions,
-          child: Text(tr('widgets.FolderView.sortingOptions')),
+          child: Text(tr(LocaleKeys.widgets_FolderView_sortingOptions)),
         ),
         if (_viewType == FolderViewType.Standard)
           PopupMenuItem<DropDownChoices>(
             key: const ValueKey("ViewOptions"),
             value: DropDownChoices.ViewOptions,
-            child: Text(tr('widgets.FolderView.viewOptions')),
+            child: Text(tr(LocaleKeys.widgets_FolderView_viewOptions)),
           ),
       ],
     );
@@ -467,10 +580,11 @@ class _FolderViewState extends State<FolderView> {
       IconButton(
         icon: const Icon(Icons.search),
         onPressed: () {
-          showSearch(
+          logEvent(Event.SearchButtonPressed);
+          var _ = showSearch(
             context: context,
             delegate: NoteSearchDelegate(
-              sortedNotesFolder.notes,
+              sortedNotesFolder!.notes,
               _viewType,
             ),
           );
@@ -481,35 +595,67 @@ class _FolderViewState extends State<FolderView> {
   }
 
   List<Widget> _buildInSelectionNoteActions() {
+    var extraActions = PopupMenuButton<NoteSelectedExtraActions>(
+      key: const ValueKey("PopupMenu"),
+      onSelected: (NoteSelectedExtraActions choice) {
+        switch (choice) {
+          case NoteSelectedExtraActions.MoveToFolder:
+            _moveSelectedNotesToFolder();
+            break;
+        }
+      },
+      itemBuilder: (BuildContext context) =>
+          <PopupMenuEntry<NoteSelectedExtraActions>>[
+        PopupMenuItem<NoteSelectedExtraActions>(
+          value: NoteSelectedExtraActions.MoveToFolder,
+          child: Text(tr(LocaleKeys.widgets_FolderView_actions_moveToFolder)),
+        ),
+      ],
+    );
+
     return <Widget>[
-      IconButton(
-        icon: const Icon(Icons.share),
-        onPressed: () async {
-          await shareNote(selectedNote!);
-          _resetSelection();
-        },
-      ),
+      if (selectedNotes.length == 1)
+        IconButton(
+          icon: const Icon(Icons.share),
+          onPressed: () async {
+            await shareNote(selectedNotes.first);
+            _resetSelection();
+          },
+        ),
       IconButton(
         icon: const Icon(Icons.delete),
-        onPressed: _deleteNote,
+        onPressed: _deleteSelectedNotes,
       ),
+      extraActions,
     ];
   }
 
-  void _deleteNote() async {
-    var note = selectedNote;
-
+  Future<void> _deleteSelectedNotes() async {
     var settings = Provider.of<Settings>(context, listen: false);
     var shouldDelete = true;
     if (settings.confirmDelete) {
-      shouldDelete = await showDialog(
-        context: context,
-        builder: (context) => NoteDeleteDialog(),
-      );
+      shouldDelete = (await showDialog(
+            context: context,
+            builder: (context) => NoteDeleteDialog(num: selectedNotes.length),
+          )) ==
+          true;
     }
     if (shouldDelete == true) {
-      var stateContainer = context.read<GitJournalRepo>();
-      stateContainer.removeNote(note!);
+      var repo = context.read<GitJournalRepo>();
+      repo.removeNotes(selectedNotes);
+    }
+
+    _resetSelection();
+  }
+
+  Future<void> _moveSelectedNotesToFolder() async {
+    var destFolder = await showDialog<NotesFolderFS>(
+      context: context,
+      builder: (context) => FolderSelectionDialog(),
+    );
+    if (destFolder != null) {
+      var repo = context.read<GitJournalRepo>();
+      repo.moveNotes(selectedNotes, destFolder);
     }
 
     _resetSelection();
@@ -517,8 +663,24 @@ class _FolderViewState extends State<FolderView> {
 
   void _resetSelection() {
     setState(() {
-      selectedNote = null;
-      inSelectionMode = false;
+      selectedNotes = [];
     });
+  }
+}
+
+class _SliverHeader extends StatelessWidget {
+  final String text;
+  const _SliverHeader({Key? key, required this.text}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    var textTheme = Theme.of(context).textTheme;
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+        child: Text(text, style: textTheme.subtitle2),
+      ),
+    );
   }
 }

@@ -1,24 +1,35 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
+
+# SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 set -eu
 
 cd "$(dirname "$0")"
-touch /tmp/flutter.pid
-./reload.sh &
-BGPID=$!
-trap 'kill $BGPID; exit' SIGINT
-cd ../
+cd ..
 
-DEVICES=$(adb devices -l | tail -n +2)
-NUM_DEVICES=$(echo "$DEVICES" | wc -l)
+FILTER="$1"
 
-if [ "$NUM_DEVICES" = 1 ]; then
-    DEVICE_ID="$DEVICES"
+DEVICE=$(./flutterw devices --device-timeout=1 --machine | jq -r '.[].name' | fzf -1 -q "$FILTER")
+DEVICE_INFO=$(./flutterw devices --machine | jq -r ".[] | select(.name==\"$DEVICE\")")
+DEVICE_ID=$(echo "$DEVICE_INFO" | jq -r .id)
+DEVICE_TARGET=$(echo "$DEVICE_INFO" | jq -r .targetPlatform)
+
+#echo "Device: $DEVICE"
+#echo "Device ID: $DEVICE_ID"
+#echo "Device Target: $DEVICE_TARGET"
+
+#print -s "make run \"$DEVICE\""
+
+if [[ $DEVICE_TARGET == *"android"* ]]; then
+    echo
+    echo "flutter run -d $DEVICE_ID --flavor dev --track-widget-creation"
+    echo
+    ./flutterw run -d "$DEVICE_ID" --flavor dev --track-widget-creation
 else
-    DEVICE_ID=$(echo "$DEVICES" | fzf)
+    echo
+    echo "flutter run -d $DEVICE_ID --track-widget-creation"
+    echo
+    ./flutterw run -d "$DEVICE_ID" --track-widget-creation
 fi
-
-DEVICE_ID=$(echo "$DEVICE_ID" | awk '{ print $1 }')
-
-echo "Running on $DEVICE_ID"
-flutter run -d "$DEVICE_ID" --pid-file /tmp/flutter.pid --observatory-port 8888 "$@"

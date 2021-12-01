@@ -1,10 +1,15 @@
-import 'dart:io';
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:universal_io/io.dart';
 
+import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/utils/logger.dart';
 
 Future<void> migrateSettings(
   String id,
@@ -12,12 +17,13 @@ Future<void> migrateSettings(
   String gitBaseDir,
 ) async {
   var version = pref.getInt('settingsVersion') ?? -1;
+  dynamic _;
 
   if (version == 0) {
     Log.i("Migrating settings from v0 -> v1");
     var cache = p.join(gitBaseDir, "cache.json");
     if (File(cache).existsSync()) {
-      await File(cache).delete();
+      var _ = await File(cache).delete();
     }
 
     var localGitRepoConfigured =
@@ -31,10 +37,10 @@ Future<void> migrateSettings(
       var newName = p.join(gitBaseDir, "journal");
 
       if (Directory(oldName).existsSync()) {
-        await Directory(oldName).rename(newName);
+        var _ = await Directory(oldName).rename(newName);
         var folderName = "journal";
 
-        await pref.setString('remoteGitRepoPath', folderName);
+        var __ = await pref.setString('remoteGitRepoPath', folderName);
       }
     }
 
@@ -47,7 +53,7 @@ Future<void> migrateSettings(
         if (stat.type != FileSystemEntityType.directory) {
           var fileName = p.basename(fsEntity.path);
           if (fileName == 'cache.json') {
-            await File(fsEntity.path).delete();
+            var _ = await File(fsEntity.path).delete();
           }
           continue;
         }
@@ -56,7 +62,7 @@ Future<void> migrateSettings(
         if (folderName.startsWith('journal') || folderName.startsWith('ssh')) {
           var newPath = p.join(gitBaseDir, folderName);
           if (!Directory(newPath).existsSync()) {
-            await Directory(fsEntity.path).rename(newPath);
+            var _ = await Directory(fsEntity.path).rename(newPath);
           }
         }
       }
@@ -66,7 +72,7 @@ Future<void> migrateSettings(
     await migrateSshKeys(pref, gitBaseDir);
 
     version = 1;
-    await pref.setInt("settingsVersion", version);
+    var _ = await pref.setInt("settingsVersion", version);
   }
 
   if (version == 1) {
@@ -103,8 +109,8 @@ Future<void> migrateSettings(
     for (var key in stringKeys) {
       var value = pref.getString(key);
       if (value != null) {
-        await pref.remove(key);
-        await pref.setString(prefix + key, value);
+        _ = await pref.remove(key);
+        _ = await pref.setString(prefix + key, value);
       }
     }
 
@@ -122,8 +128,8 @@ Future<void> migrateSettings(
     for (var key in boolKeys) {
       var value = pref.getBool(key);
       if (value != null) {
-        await pref.remove(key);
-        await pref.setBool(prefix + key, value);
+        _ = await pref.remove(key);
+        _ = await pref.setBool(prefix + key, value);
       }
     }
 
@@ -133,21 +139,21 @@ Future<void> migrateSettings(
     for (var key in stringListKeys) {
       var value = pref.getStringList(key);
       if (value != null) {
-        await pref.remove(key);
-        await pref.setStringList(prefix + key, value);
+        _ = await pref.remove(key);
+        _ = await pref.setStringList(prefix + key, value);
       }
     }
 
     version = 2;
-    await pref.remove("settingsVersion");
-    await pref.setInt(prefix + "settingsVersion", version);
+    _ = await pref.remove("settingsVersion");
+    _ = await pref.setInt(prefix + "settingsVersion", version);
   }
 
   if (version == 2) {
     var saveTitleInH1 = pref.getBool(id + '_' + "saveTitleInH1");
     if (saveTitleInH1 == false) {
       var key = id + "_" + "titleSettings";
-      await pref.setString(key, "yaml");
+      _ = await pref.setString(key, "yaml");
     }
 
     version = 3;
@@ -176,6 +182,7 @@ Future<void> migrateSshKeysFromDir(
   Directory dir, {
   String prefix = "",
 }) async {
+  dynamic _;
   var sshPublicKeyPath = p.join(dir.path, "id_rsa.pub");
   var sshPrivateKeyPath = p.join(dir.path, "id_rsa");
 
@@ -185,8 +192,8 @@ Future<void> migrateSshKeysFromDir(
     var sshPublicKey = await File(sshPublicKeyPath).readAsString();
     var sshPrivateKey = await File(sshPrivateKeyPath).readAsString();
 
-    await pref.setString(prefix + "sshPublicKey", sshPublicKey);
-    await pref.setString(prefix + "sshPrivateKey", sshPrivateKey);
-    await pref.setString(prefix + "sshPassword", "");
+    _ = await pref.setString(prefix + "sshPublicKey", sshPublicKey);
+    _ = await pref.setString(prefix + "sshPrivateKey", sshPrivateKey);
+    _ = await pref.setString(prefix + "sshPassword", "");
   }
 }

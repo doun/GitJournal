@@ -1,66 +1,70 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
+import 'package:function_types/function_types.dart';
+
+import 'package:gitjournal/account/account_screen.dart';
+import 'package:gitjournal/account/login_screen.dart';
 import 'package:gitjournal/core/md_yaml_doc_codec.dart';
+import 'package:gitjournal/editors/note_editor.dart';
+import 'package:gitjournal/history/history_screen.dart';
 import 'package:gitjournal/iap/purchase_screen.dart';
 import 'package:gitjournal/iap/purchase_thankyou_screen.dart';
+import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/repository.dart';
-import 'package:gitjournal/screens/filesystem_screen.dart';
 import 'package:gitjournal/screens/folder_listing.dart';
 import 'package:gitjournal/screens/graph_view.dart';
 import 'package:gitjournal/screens/home_screen.dart';
-import 'package:gitjournal/screens/login_screen.dart';
-import 'package:gitjournal/screens/note_editor.dart';
 import 'package:gitjournal/screens/onboarding_screens.dart';
-import 'package:gitjournal/screens/signup_screen.dart';
 import 'package:gitjournal/screens/tag_listing.dart';
-import 'package:gitjournal/settings/app_settings.dart';
+import 'package:gitjournal/settings/app_config.dart';
 import 'package:gitjournal/settings/settings.dart';
 import 'package:gitjournal/settings/settings_screen.dart';
+import 'package:gitjournal/settings/storage_config.dart';
 import 'package:gitjournal/setup/screens.dart';
-import 'package:gitjournal/utils/logger.dart';
 import 'package:gitjournal/utils/utils.dart';
 
 class AppRoute {
-  static const OnBoarding = '/onBoarding';
-  static const AllFolders = '/folders';
-  static const AllTags = '/tags';
-  static const FileSystem = '/filesystem';
-  static const Graph = '/graph';
-  static const Settings = '/settings';
-  static const Login = '/login';
-  static const Register = '/register';
-  static const SetupRemoteGit = '/setupRemoteGit';
-  static const Purchase = '/purchase';
-  static const PurchaseThank = '/purchase_thank_you';
+  static const NewNotePrefix = '/newNote/';
 
   static const all = [
-    OnBoarding,
-    AllFolders,
-    AllTags,
-    FileSystem,
-    Graph,
-    Settings,
-    Login,
-    Register,
-    SetupRemoteGit,
-    Purchase,
-    PurchaseThank,
+    OnBoardingScreen.routePath,
+    FolderListingScreen.routePath,
+    TagListingScreen.routePath,
+    GraphViewScreen.routePath,
+    SettingsScreen.routePath,
+    LoginPage.routePath,
+    AccountScreen.routePath,
+    GitHostSetupScreen.routePath,
+    PurchaseScreen.routePath,
+    PurchaseThankYouScreen.routePath,
+    HistoryScreen.routePath,
   ];
 }
 
 class AppRouter {
-  final AppSettings appSettings;
+  final AppConfig appConfig;
   final Settings settings;
+  final StorageConfig storageConfig;
 
-  AppRouter({required this.appSettings, required this.settings});
+  AppRouter({
+    required this.appConfig,
+    required this.settings,
+    required this.storageConfig,
+  });
 
   String initialRoute() {
     var route = '/';
-    if (!appSettings.onBoardingCompleted) {
-      route = AppRoute.OnBoarding;
+    if (!appConfig.onBoardingCompleted) {
+      route = OnBoardingScreen.routePath;
     }
     if (settings.homeScreen == SettingsHomeScreen.AllFolders) {
-      route = AppRoute.AllFolders;
+      route = FolderListingScreen.routePath;
     }
     return route;
   }
@@ -70,18 +74,18 @@ class AppRouter {
     GitJournalRepo repository,
     String sharedText,
     List<String> sharedImages,
-    Function callbackIfUsedShared,
+    Func0<void> callbackIfUsedShared,
   ) {
     var route = routeSettings.name ?? "";
-    if (route == AppRoute.AllFolders ||
-        route == AppRoute.AllTags ||
-        route == AppRoute.FileSystem) {
+    if (route == FolderListingScreen.routePath ||
+        route == TagListingScreen.routePath ||
+        route.startsWith(AppRoute.NewNotePrefix)) {
       return PageRouteBuilder(
         settings: routeSettings,
         pageBuilder: (_, __, ___) => screenForRoute(
           route,
           repository,
-          settings,
+          storageConfig,
           sharedText,
           sharedImages,
           callbackIfUsedShared,
@@ -97,7 +101,7 @@ class AppRouter {
       builder: (context) => screenForRoute(
         route,
         repository,
-        settings,
+        storageConfig,
         sharedText,
         sharedImages,
         callbackIfUsedShared,
@@ -108,44 +112,44 @@ class AppRouter {
   Widget? screenForRoute(
     String route,
     GitJournalRepo repository,
-    Settings settings,
+    StorageConfig storageConfig,
     String sharedText,
     List<String> sharedImages,
-    Function callbackIfUsedShared,
+    Func0<void> callbackIfUsedShared,
   ) {
     switch (route) {
-      case '/':
+      case HomeScreen.routePath:
         return HomeScreen();
-      case AppRoute.AllFolders:
+      case FolderListingScreen.routePath:
         return FolderListingScreen();
-      case AppRoute.FileSystem:
-        return FileSystemScreen();
-      case AppRoute.AllTags:
-        return TagListingScreen();
-      case AppRoute.Graph:
-        return GraphViewScreen();
-      case AppRoute.Settings:
+      case TagListingScreen.routePath:
+        return const TagListingScreen();
+      case GraphViewScreen.routePath:
+        return const GraphViewScreen();
+      case SettingsScreen.routePath:
         return SettingsScreen();
-      case AppRoute.Login:
-        return LoginPage();
-      case AppRoute.Register:
-        return SignUpScreen();
-      case AppRoute.SetupRemoteGit:
+      case LoginPage.routePath:
+        return const LoginPage();
+      case AccountScreen.routePath:
+        return const AccountScreen();
+      case GitHostSetupScreen.routePath:
         return GitHostSetupScreen(
-          repoFolderName: settings.folderName,
+          repoFolderName: storageConfig.folderName,
           remoteName: "origin",
           onCompletedFunction: repository.completeGitHostSetup,
         );
-      case AppRoute.OnBoarding:
-        return OnBoardingScreen();
-      case AppRoute.Purchase:
+      case OnBoardingScreen.routePath:
+        return const OnBoardingScreen();
+      case PurchaseScreen.routePath:
         return PurchaseScreen();
-      case AppRoute.PurchaseThank:
+      case PurchaseThankYouScreen.routePath:
         return PurchaseThankYouScreen();
+      case HistoryScreen.routePath:
+        return const HistoryScreen();
     }
 
-    if (route.startsWith('/newNote/')) {
-      var type = route.substring('/newNote/'.length);
+    if (route.startsWith(AppRoute.NewNotePrefix)) {
+      var type = route.substring(AppRoute.NewNotePrefix.length);
       var et = SettingsEditorType.fromInternalString(type).toEditorType();
 
       Log.i("New Note - $route");

@@ -1,27 +1,20 @@
 /*
-Copyright 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * SPDX-FileCopyrightText: 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/settings/markdown_renderer_config.dart';
 import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/settings/settings_screen.dart';
-import 'package:gitjournal/settings/settings_widgets.dart';
+import 'package:gitjournal/settings/widgets/settings_header.dart';
+import 'package:gitjournal/settings/widgets/settings_list_preference.dart';
 
 class SettingsDisplayImagesCaptionScreen extends StatefulWidget {
   @override
@@ -35,36 +28,37 @@ class SettingsDisplayImagesCaptionScreenState
   final doCaptionTagsKey = GlobalKey<FormFieldState<String>>();
   @override
   Widget build(BuildContext context) {
-    var settings = Provider.of<Settings>(context);
-    var saveDoNotCaptionTag = (String? doNotCaptionTags) {
+    var settings = Provider.of<MarkdownRendererConfig>(context);
+    void saveDoNotCaptionTag(String? doNotCaptionTags) {
       if (doNotCaptionTags == null) {
         return;
       }
       settings.doNotCaptionTags = parseTags(doNotCaptionTags);
       settings.save();
-    };
+    }
+
     var doNotCaptionTagsForm = Form(
       child: TextFormField(
         key: doNotCaptionTagsKey,
         style: Theme.of(context).textTheme.headline6,
         decoration: InputDecoration(
-          hintText:
-              tr('settings.display.images.captions.doNotCaptionTags.hint'),
-          labelText:
-              tr('settings.display.images.captions.doNotCaptionTags.label'),
+          hintText: tr(
+              LocaleKeys.settings_display_images_captions_doCaptionTags_hint),
+          labelText: tr(
+              LocaleKeys.settings_display_images_captions_doCaptionTags_label),
         ),
         validator: (String? value) {
           value = value!.trim();
           if (parseTags(value).isEmpty) {
-            return tr(
-                'settings.display.images.captions.doNotCaptionTags.validator.empty');
+            return tr(LocaleKeys
+                .settings_display_images_captions_doCaptionTags_validator_empty);
           }
 
           if (parseTags(value)
               .intersection(settings.doCaptionTags)
               .isNotEmpty) {
-            return tr(
-                'settings.display.images.captions.doNotCaptionTags.validator.same');
+            return tr(LocaleKeys
+                .settings_display_images_captions_doCaptionTags_validator_same);
           }
 
           return null;
@@ -86,27 +80,29 @@ class SettingsDisplayImagesCaptionScreenState
       }
       settings.doCaptionTags = parseTags(doCaptionTags);
       settings.save();
-      doNotCaptionTagsForm.createState();
+      var _ = doNotCaptionTagsForm.createState();
     };
     var doCaptionTagsForm = Form(
       child: TextFormField(
         key: doCaptionTagsKey,
         style: Theme.of(context).textTheme.headline6,
         decoration: InputDecoration(
-          hintText: tr('settings.display.images.captions.doCaptionTags.hint'),
-          labelText: tr('settings.display.images.captions.doCaptionTags.label'),
+          hintText: tr(
+              LocaleKeys.settings_display_images_captions_doCaptionTags_hint),
+          labelText: tr(
+              LocaleKeys.settings_display_images_captions_doCaptionTags_label),
         ),
         validator: (String? value) {
           if (parseTags(value!).isEmpty) {
-            return tr(
-                'settings.display.images.captions.doCaptionTags.validator.empty');
+            return tr(LocaleKeys
+                .settings_display_images_captions_doCaptionTags_validator_empty);
           }
 
           if (parseTags(value)
               .intersection(settings.doNotCaptionTags)
               .isNotEmpty) {
-            return tr(
-                'settings.display.images.captions.doCaptionTags.validator.same');
+            return tr(LocaleKeys
+                .settings_display_images_captions_doCaptionTags_validator_same);
           }
 
           return null;
@@ -124,7 +120,7 @@ class SettingsDisplayImagesCaptionScreenState
 
     var body = ListView(children: <Widget>[
       ListPreference(
-        title: tr("settings.display.images.captions.useAsCaption"),
+        title: tr(LocaleKeys.settings_display_images_captions_useAsCaption),
         currentOption: settings.useAsCaption.toPublicString(),
         options: SettingsImageTextType.options
             .map((e) => e.toPublicString())
@@ -137,7 +133,8 @@ class SettingsDisplayImagesCaptionScreenState
         },
       ),
       SwitchListTile(
-        title: Text(tr('settings.display.images.captions.overlayCaption')),
+        title: Text(
+            tr(LocaleKeys.settings_display_images_captions_overlayCaption)),
         value: settings.overlayCaption,
         onChanged: (bool newVal) {
           settings.overlayCaption = newVal;
@@ -146,8 +143,8 @@ class SettingsDisplayImagesCaptionScreenState
       ),
       if (settings.overlayCaption)
         SwitchListTile(
-          title:
-              Text(tr('settings.display.images.captions.transparentCaption')),
+          title: Text(tr(
+              LocaleKeys.settings_display_images_captions_transparentCaption)),
           value: settings.transparentCaption,
           onChanged: (bool newVal) {
             settings.transparentCaption = newVal;
@@ -156,7 +153,8 @@ class SettingsDisplayImagesCaptionScreenState
         ),
       if (settings.overlayCaption && settings.transparentCaption)
         SwitchListTile(
-          title: Text(tr('settings.display.images.captions.blurBehindCaption')),
+          title: Text(tr(
+              LocaleKeys.settings_display_images_captions_blurBehindCaption)),
           value: settings.blurBehindCaption,
           onChanged: (bool newVal) {
             settings.blurBehindCaption = newVal;
@@ -164,20 +162,26 @@ class SettingsDisplayImagesCaptionScreenState
           },
         ),
       SwitchListTile(
-        title: Text(tr('settings.display.images.captions.tooltipFirst.title')),
+        title: Text(
+            tr(LocaleKeys.settings_display_images_captions_tooltipFirst_title)),
         value: settings.tooltipFirst,
         subtitle: settings.tooltipFirst
-            ? Text(tr('settings.display.images.captions.tooltipFirst.tooltip'))
-            : Text(tr('settings.display.images.captions.tooltipFirst.altText')),
+            ? Text(tr(LocaleKeys
+                .settings_display_images_captions_tooltipFirst_tooltip))
+            : Text(tr(LocaleKeys
+                .settings_display_images_captions_tooltipFirst_altText)),
         onChanged: (bool newVal) {
           settings.tooltipFirst = newVal;
           settings.save();
         },
       ),
-      SettingsHeader(tr('settings.display.images.captions.captionOverrides')),
+      SettingsHeader(
+        tr(LocaleKeys.settings_display_images_captions_captionOverrides),
+      ),
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: Text(tr("settings.display.images.captions.tagDescription")),
+        child: Text(
+            tr(LocaleKeys.settings_display_images_captions_tagDescription)),
       ),
       ListTile(title: doCaptionTagsForm),
       ListTile(title: doNotCaptionTagsForm)
@@ -185,7 +189,7 @@ class SettingsDisplayImagesCaptionScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(tr('settings.display.images.captions.title')),
+        title: Text(tr(LocaleKeys.settings_display_images_captions_title)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

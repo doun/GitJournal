@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:test/test.dart';
 
 import 'package:gitjournal/core/processors/image_extractor.dart';
@@ -13,8 +19,8 @@ void main() {
     var images = p.extract(body);
 
     expect(images, {
-      NoteImage(alt: 'alt', url: '../final.img'),
-      NoteImage(alt: 'alt2', url: '../final2.img'),
+      const NoteImage(alt: 'alt', url: '../final.img'),
+      const NoteImage(alt: 'alt2', url: '../final2.img'),
     });
   });
 }

@@ -1,14 +1,21 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/services.dart';
 
 import 'package:http/http.dart' as http;
+import 'package:universal_io/io.dart' show HttpHeaders;
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/error_reporting.dart';
+import 'package:gitjournal/logger/logger.dart';
 import 'githost.dart';
 
 // FIXME: Handle for edge cases of json.decode
@@ -17,7 +24,7 @@ class GitHub implements GitHost {
   static const _clientID = "aa3072cbfb02b1db14ed";
   static const _clientSecret = "010d303ea99f82330f2b228977cef9ddbf7af2cd";
 
-  var _platform = const MethodChannel('gitjournal.io/git');
+  final _platform = const MethodChannel('gitjournal.io/git');
   var _accessCode = "";
 
   @override
@@ -71,13 +78,13 @@ class GitHub implements GitHost {
   }
 
   @override
-  Future launchOAuthScreen() async {
+  Future<void> launchOAuthScreen() async {
     // FIXME: Add some 'state' over here!
 
     var url = "https://github.com/login/oauth/authorize?client_id=" +
         _clientID +
         "&scope=repo";
-    return launch(url);
+    var _ = await launch(url);
   }
 
   @override
@@ -94,7 +101,7 @@ class GitHub implements GitHost {
     };
 
     if (foundation.kDebugMode) {
-      print(toCurlCommand(url, headers));
+      Log.d(toCurlCommand(url, headers));
     }
 
     var response = await http.get(url, headers: headers);
@@ -109,11 +116,11 @@ class GitHub implements GitHost {
 
     List<dynamic> list = jsonDecode(response.body);
     var repos = <GitHostRepo>[];
-    list.forEach((dynamic d) {
+    for (var d in list) {
       var map = Map<String, dynamic>.from(d);
       var repo = repoFromJson(map);
       repos.add(repo);
-    });
+    }
 
     // FIXME: Sort these based on some criteria
     return Result(repos);
@@ -195,7 +202,7 @@ class GitHub implements GitHost {
     try {
       Map<String, dynamic> map = json.decode(response.body);
       return Result(repoFromJson(map));
-    } on Exception catch (ex, st) {
+    } catch (ex, st) {
       return Result.fail(ex, st);
     }
   }
@@ -271,7 +278,8 @@ class GitHub implements GitHost {
       issues: parsedJson['open_issues_count'],
       language: parsedJson['language'] ?? "",
       private: parsedJson['private'],
-      tags: parsedJson['topics'] ?? [],
+      // tags: parsedJson['topics'] ?? [],
+      tags: [],
       license: licenseMap != null ? licenseMap['spdx_id'] : null,
     );
   }
@@ -299,22 +307,51 @@ class GitHub implements GitHost {
       return Result.fail(ex);
     }
 
-    Map<String, dynamic>? map = jsonDecode(response.body);
-    if (map == null || map.isEmpty) {
-      Log.d("Github getUserInfo: jsonDecode Failed " +
-          response.statusCode.toString() +
-          ": " +
-          response.body);
+    Map<String, dynamic>? map;
+    try {
+      map = jsonDecode(response.body);
+      if (map == null || map.isEmpty) {
+        Log.d("Github getUserInfo: jsonDecode Failed " +
+            response.statusCode.toString() +
+            ": " +
+            response.body);
 
-      var ex = GitHostException.JsonDecodingFail;
-      return Result.fail(ex);
+        var ex = GitHostException.JsonDecodingFail;
+        return Result.fail(ex);
+      }
+    } catch (ex, st) {
+      Log.e("GitHub user Info", ex: ex, stacktrace: st);
+      logException(ex, st);
+      return Result.fail(ex, st);
     }
 
-    return Result(UserInfo(
-      name: map['name'],
-      email: map['email'],
-      username: map['login'],
-    ));
+    if (!map.containsKey('name')) {
+      return Result.fail(Exception('GitHub UserInfo missing name'));
+    }
+    if (!map.containsKey('email')) {
+      return Result.fail(Exception('GitHub UserInfo missing email'));
+    }
+    if (!map.containsKey('login')) {
+      return Result.fail(Exception('GitHub UserInfo missing login'));
+    }
+
+    var name = "";
+    var email = "";
+    var login = "";
+
+    if (map['name'] is String) {
+      name = map['name'];
+    }
+
+    if (map['email'] is String) {
+      email = map['email'];
+    }
+
+    if (map['login'] is String) {
+      login = map['login'];
+    }
+
+    return Result(UserInfo(name: name, email: email, username: login));
   }
 
   String _buildAuthHeader() {

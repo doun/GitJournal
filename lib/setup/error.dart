@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -5,7 +11,7 @@ import 'package:easy_localization/easy_localization.dart';
 class GitHostSetupErrorPage extends StatelessWidget {
   final String errorMessage;
 
-  GitHostSetupErrorPage(this.errorMessage);
+  const GitHostSetupErrorPage(this.errorMessage);
 
   @override
   Widget build(BuildContext context) {

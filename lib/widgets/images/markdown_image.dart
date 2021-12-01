@@ -1,20 +1,10 @@
 /*
-Copyright 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
+ * SPDX-FileCopyrightText: 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
@@ -25,9 +15,11 @@ import 'package:flutter/widgets.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:provider/provider.dart';
+import 'package:universal_io/io.dart';
 
-import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/logger/logger.dart';
+import 'package:gitjournal/settings/markdown_renderer_config.dart';
 import 'package:gitjournal/widgets/images/image_caption.dart';
 import 'package:gitjournal/widgets/images/image_details.dart';
 import 'package:gitjournal/widgets/images/themable_image.dart';
@@ -41,7 +33,7 @@ class MarkdownImage extends StatelessWidget {
   // FIXME: Avoid using dynamic!
   final Future<dynamic> data;
 
-  MarkdownImage._(
+  const MarkdownImage._(
       this.data, this.width, this.height, String? altText, String? tooltip)
       : altText = altText ?? "",
         tooltip = tooltip ?? "";
@@ -61,7 +53,7 @@ class MarkdownImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<Settings>(context);
+    final settings = Provider.of<MarkdownRendererConfig>(context);
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
 
@@ -96,7 +88,7 @@ class MarkdownImage extends StatelessWidget {
                 Log.e(errorMessage);
                 if (snapshot.error is HttpExceptionWithStatus) {
                   final httpError = snapshot.error as HttpExceptionWithStatus;
-                  errorMessage = tr("widgets.imageRenderer.httpError",
+                  errorMessage = tr(LocaleKeys.widgets_imageRenderer_httpError,
                       namedArgs: {
                         "status": httpError.statusCode.toString(),
                         "url": httpError.uri.toString()
@@ -181,12 +173,15 @@ class MarkdownImage extends StatelessWidget {
                 return GestureDetector(
                   child: Hero(tag: im, child: im),
                   onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => ImageDetails(
-                                im as ThemableImage,
-                                captionText(context, altText, tooltip))));
+                    var _ = Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ImageDetails(
+                          im as ThemableImage,
+                          captionText(context, altText, tooltip),
+                        ),
+                      ),
+                    );
                   },
                 );
               }
@@ -217,7 +212,7 @@ class MarkdownImage extends StatelessWidget {
 
 Color getOverlayBackgroundColor(BuildContext context,
     {Color? light, Color? dark}) {
-  final settings = Provider.of<Settings>(context);
+  final settings = Provider.of<MarkdownRendererConfig>(context);
   final theme = Theme.of(context);
   return theme.brightness == Brightness.dark
       ? settings.transparentCaption

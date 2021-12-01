@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:convert';
 
 import 'package:gitjournal/core/note.dart';
@@ -55,7 +61,7 @@ class Checklist {
     multiLine: false,
   );
 
-  Note _note;
+  final Note _note;
   List<ChecklistItem> items = [];
 
   late List<String> _lines;
@@ -96,10 +102,11 @@ class Checklist {
     for (var item in items) {
       _lines[item.lineNo] = item.toString();
     }
-    _note.body = _lines.join('\n');
+    var body = _lines.join('\n');
     if (endsWithNewLine) {
-      _note.body += '\n';
+      body += '\n';
     }
+    _note.apply(body: body);
     return _note;
   }
 
@@ -130,15 +137,16 @@ class Checklist {
       return;
     }
 
-    removeAt(i);
+    var _ = removeAt(i);
   }
 
   ChecklistItem removeAt(int index) {
     assert(index >= 0 && index <= items.length);
+    dynamic _;
 
     var item = items[index];
-    items.removeAt(index);
-    _lines.removeAt(item.lineNo);
+    _ = items.removeAt(index);
+    _ = _lines.removeAt(item.lineNo);
     for (var j = index; j < items.length; j++) {
       items[j].lineNo -= 1;
     }
@@ -181,7 +189,7 @@ class Checklist {
       return;
     }
 
-    if (index == items.length) {
+    if (index >= items.length) {
       var prevItem = items.last;
       item.lineNo = prevItem.lineNo + 1;
       items.add(item);

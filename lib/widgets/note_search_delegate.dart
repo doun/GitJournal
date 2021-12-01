@@ -1,33 +1,26 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
+import 'package:gitjournal/core/folder/notes_folder.dart';
+import 'package:gitjournal/core/folder/virtual_notes_folder.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/virtual_notes_folder.dart';
 import 'package:gitjournal/folder_views/common.dart';
 import 'package:gitjournal/folder_views/standard_view.dart';
-import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/themes.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
 
 class NoteSearchDelegate extends SearchDelegate<Note?> {
   final List<Note> notes;
   final FolderViewType viewType;
 
   NoteSearchDelegate(this.notes, this.viewType);
-
-  // Workaround because of https://github.com/flutter/flutter/issues/32180
-  @override
-  ThemeData appBarTheme(BuildContext context) {
-    var theme = Theme.of(context);
-    if (theme.brightness == Brightness.light) {
-      return theme;
-    }
-
-    return theme.copyWith(
-      primaryColor: Themes.dark.primaryColor,
-    );
-  }
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -66,6 +59,14 @@ class NoteSearchDelegate extends SearchDelegate<Note?> {
   }
 
   Widget buildView(BuildContext context, String query) {
+    var fv = _buildFolderView(context, query);
+
+    return CustomScrollView(
+      slivers: [fv],
+    );
+  }
+
+  Widget _buildFolderView(BuildContext context, String query) {
     // TODO: This should be made far more efficient
     var q = query.toLowerCase();
     var filteredNotes = notes.where((note) {
@@ -78,9 +79,9 @@ class NoteSearchDelegate extends SearchDelegate<Note?> {
       return note.body.toLowerCase().contains(q);
     }).toList();
 
-    var settings = Provider.of<Settings>(context);
-    var folder = VirtualNotesFolder(filteredNotes, settings);
-    var emptyText = tr('widgets.FolderView.searchFailed');
+    var folderConfig = Provider.of<NotesFolderConfig>(context);
+    var folder = VirtualNotesFolder(filteredNotes, folderConfig);
+    var emptyText = tr(LocaleKeys.widgets_FolderView_searchFailed);
 
     return buildFolderView(
       viewType: viewType,
@@ -88,7 +89,12 @@ class NoteSearchDelegate extends SearchDelegate<Note?> {
       emptyText: emptyText,
       header: StandardViewHeader.TitleOrFileName,
       showSummary: true,
-      noteTapped: (Note note) => openNoteEditor(context, note, folder),
+      noteTapped: (Note note) => openNoteEditor(
+        context,
+        note,
+        folder,
+        highlightString: q,
+      ),
       noteLongPressed: (Note note) {},
       isNoteSelected: (n) => false,
       searchTerm: query,

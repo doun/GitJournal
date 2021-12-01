@@ -1,21 +1,33 @@
-import 'dart:io';
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:math';
 
+import 'package:dart_git/dart_git.dart';
+import 'package:dart_git/utils/result.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/test.dart';
+import 'package:universal_io/io.dart' as io;
 
-import 'package:gitjournal/core/flattened_notes_folder.dart';
+import 'package:gitjournal/core/file/file_storage.dart';
+import 'package:gitjournal/core/folder/flattened_notes_folder.dart';
+import 'package:gitjournal/core/folder/notes_folder_config.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder_fs.dart';
-import 'package:gitjournal/settings/settings.dart';
+import 'package:gitjournal/core/note_storage.dart';
 
 void main() {
   var random = Random(DateTime.now().millisecondsSinceEpoch);
 
   String _getRandomFilePath(String basePath) {
+    assert(basePath.startsWith(p.separator));
     while (true) {
       var filePath = p.join(basePath, "${random.nextInt(1000)}.md");
-      if (File(filePath).existsSync()) {
+      if (io.File(filePath).existsSync()) {
         continue;
       }
 
@@ -24,62 +36,95 @@ void main() {
   }
 
   group('Flattened Notes Folder Test', () {
-    late Directory tempDir;
+    late io.Directory tempDir;
+    late String repoPath;
     late NotesFolderFS rootFolder;
+    late NotesFolderConfig config;
+    late FileStorage fileStorage;
+
+    final storage = NoteStorage();
 
     setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp('__sorted_folder_test__');
+      tempDir = await io.Directory.systemTemp.createTemp('__fnft__');
+      repoPath = tempDir.path + p.separator;
 
-      rootFolder = NotesFolderFS(null, tempDir.path, Settings(''));
+      SharedPreferences.setMockInitialValues({});
+      config = NotesFolderConfig('', await SharedPreferences.getInstance());
+      fileStorage = await FileStorage.fake(repoPath);
+
+      rootFolder = NotesFolderFS.root(config, fileStorage);
 
       for (var i = 0; i < 3; i++) {
-        var note = Note(rootFolder, _getRandomFilePath(rootFolder.folderPath));
-        note.modified = DateTime(2020, 1, 10 + (i * 2));
-        note.body = "$i\n";
-        await note.save();
-      }
-
-      Directory(p.join(tempDir.path, "sub1")).createSync();
-      Directory(p.join(tempDir.path, "sub1", "p1")).createSync();
-      Directory(p.join(tempDir.path, "sub2")).createSync();
-
-      var sub1Folder =
-          NotesFolderFS(rootFolder, p.join(tempDir.path, "sub1"), Settings(''));
-      for (var i = 0; i < 2; i++) {
-        var note = Note(
-          sub1Folder,
-          _getRandomFilePath(sub1Folder.folderPath),
+        var fp = _getRandomFilePath(rootFolder.fullFolderPath);
+        var note = Note.newNote(rootFolder,
+            fileName: p.basename(fp), fileFormat: NoteFileFormat.Markdown);
+        note.apply(
+          modified: DateTime(2020, 1, 10 + (i * 2)),
+          body: "$i\n",
         );
-        note.modified = DateTime(2020, 1, 10 + (i * 2));
-        note.body = "sub1-$i\n";
-        await note.save();
+        await storage.save(note).throwOnError();
       }
 
-      var sub2Folder =
-          NotesFolderFS(rootFolder, p.join(tempDir.path, "sub2"), Settings(''));
+      io.Directory(p.join(repoPath, "sub1")).createSync();
+      io.Directory(p.join(repoPath, "sub1", "p1")).createSync();
+      io.Directory(p.join(repoPath, "sub2")).createSync();
+
+      var sub1Folder = NotesFolderFS(rootFolder, "sub1", config, fileStorage);
       for (var i = 0; i < 2; i++) {
-        var note = Note(
-          sub2Folder,
-          _getRandomFilePath(sub2Folder.folderPath),
+        var fp = _getRandomFilePath(sub1Folder.fullFolderPath);
+        var note = Note.newNote(sub1Folder,
+            fileName: p.basename(fp), fileFormat: NoteFileFormat.Markdown);
+
+        note.apply(
+          modified: DateTime(2020, 1, 10 + (i * 2)),
+          body: "sub1-$i\n",
         );
-        note.modified = DateTime(2020, 1, 10 + (i * 2));
-        note.body = "sub2-$i\n";
-        await note.save();
+        await storage.save(note).throwOnError();
       }
 
-      var p1Folder = NotesFolderFS(
-          sub1Folder, p.join(tempDir.path, "sub1", "p1"), Settings(''));
+      var sub2Folder = NotesFolderFS(rootFolder, "sub2", config, fileStorage);
       for (var i = 0; i < 2; i++) {
-        var note = Note(
-          p1Folder,
-          _getRandomFilePath(p1Folder.folderPath),
+        var fp = _getRandomFilePath(sub2Folder.fullFolderPath);
+        var note = Note.newNote(sub2Folder,
+            fileName: p.basename(fp), fileFormat: NoteFileFormat.Markdown);
+
+        note.apply(
+          modified: DateTime(2020, 1, 10 + (i * 2)),
+          body: "sub2-$i\n",
         );
-        note.modified = DateTime(2020, 1, 10 + (i * 2));
-        note.body = "p1-$i\n";
-        await note.save();
+        await storage.save(note).throwOnError();
       }
+
+      var p1Folder =
+          NotesFolderFS(sub1Folder, p.join("sub1", "p1"), config, fileStorage);
+      for (var i = 0; i < 2; i++) {
+        var fp = _getRandomFilePath(p1Folder.fullFolderPath);
+        var note = Note.newNote(p1Folder,
+            fileName: p.basename(fp), fileFormat: NoteFileFormat.Markdown);
+
+        note.apply(
+          modified: DateTime(2020, 1, 10 + (i * 2)),
+          body: "p1-$i\n",
+        );
+        await storage.save(note).throwOnError();
+      }
+
+      var repo = await GitRepository.load(repoPath).getOrThrow();
+      await repo
+          .commit(
+            message: "Prepare Test Env",
+            author: GitAuthor(name: 'Name', email: "name@example.com"),
+            addAll: true,
+          )
+          .throwOnError();
+
+      await rootFolder.fileStorage.reload().throwOnError();
+
+      expect(fileStorage.blobCTimeBuilder.map, isNotEmpty);
+      expect(fileStorage.fileMTimeBuilder.map, isNotEmpty);
 
       await rootFolder.loadRecursively();
+      expect(rootFolder.notes, isNotEmpty);
     });
 
     tearDown(() async {
@@ -112,10 +157,15 @@ void main() {
       var f = FlattenedNotesFolder(rootFolder, title: "");
 
       var p1 = (f.fsFolder as NotesFolderFS).getFolderWithSpec("sub1/p1")!;
-      var note = Note(p1, p.join(p1.folderPath, "new.md"));
-      note.modified = DateTime(2020, 2, 1);
-      note.body = "new\n";
-      await note.save();
+      var fp = p.join(p1.folderPath, "new.md");
+      var note = Note.newNote(p1,
+          fileName: p.basename(fp), fileFormat: NoteFileFormat.Markdown);
+      note.apply(
+        modified: DateTime(2020, 2, 1),
+        body: "new\n",
+      );
+      await storage.save(note).throwOnError();
+
       p1.add(note);
 
       expect(f.notes.length, 10);

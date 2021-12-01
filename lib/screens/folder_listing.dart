@@ -1,35 +1,29 @@
 /*
-Copyright 2020-2021 Vishesh Handa <me@vhanda.in>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gitjournal/core/flattened_notes_folder.dart';
-import 'package:gitjournal/core/notes_folder_fs.dart';
+import 'package:gitjournal/core/folder/flattened_notes_folder.dart';
+import 'package:gitjournal/core/folder/notes_folder.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/folder_views/folder_view.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
 import 'package:gitjournal/repository.dart';
-import 'package:gitjournal/settings/app_settings.dart';
+import 'package:gitjournal/settings/app_config.dart';
 import 'package:gitjournal/widgets/app_bar_menu_button.dart';
 import 'package:gitjournal/widgets/app_drawer.dart';
 import 'package:gitjournal/widgets/folder_tree_view.dart';
 import 'package:gitjournal/widgets/rename_dialog.dart';
 
 class FolderListingScreen extends StatefulWidget {
+  static const routePath = '/folders';
+
   @override
   _FolderListingScreenState createState() => _FolderListingScreenState();
 }
@@ -43,13 +37,13 @@ class _FolderListingScreenState extends State<FolderListingScreen> {
     final notesFolder = Provider.of<NotesFolderFS>(context);
 
     // Load experimental setting
-    var settings = Provider.of<AppSettings>(context);
+    var settings = Provider.of<AppConfig>(context);
 
     var treeView = FolderTreeView(
       key: _folderTreeViewKey,
       rootFolder: notesFolder,
       onFolderEntered: (NotesFolderFS folder) {
-        var destination;
+        late NotesFolder destination;
         if (settings.experimentalSubfolders) {
           destination = FlattenedNotesFolder(folder, title: folder.name);
         } else {
@@ -62,7 +56,7 @@ class _FolderListingScreenState extends State<FolderListingScreen> {
           ),
           settings: const RouteSettings(name: '/folder/'),
         );
-        Navigator.of(context).push(route);
+        var _ = Navigator.push(context, route);
       },
       onFolderSelected: (folder) {
         setState(() {
@@ -97,8 +91,8 @@ class _FolderListingScreenState extends State<FolderListingScreen> {
         },
         onSelected: (String value) async {
           if (value == "Rename") {
-            if (selectedFolder!.pathSpec().isEmpty) {
-              await showDialog(
+            if (selectedFolder!.folderPath.isEmpty) {
+              var _ = await showDialog(
                 context: context,
                 builder: (_) => RenameFolderErrorDialog(),
               );
@@ -128,7 +122,7 @@ class _FolderListingScreenState extends State<FolderListingScreen> {
             }
           } else if (value == "Delete") {
             if (selectedFolder!.hasNotesRecursive) {
-              await showDialog(
+              var _ = await showDialog(
                 context: context,
                 builder: (_) => DeleteFolderErrorDialog(),
               );
@@ -150,7 +144,7 @@ class _FolderListingScreenState extends State<FolderListingScreen> {
       },
     );
 
-    var title = Text(tr('screens.folders.title'));
+    var title = Text(tr(LocaleKeys.screens_folders_title));
     if (selectedFolder != null) {
       title = Text(tr("screens.folders.selected"));
     }
@@ -254,7 +248,7 @@ class _CreateFolderAlertDialogState extends State<CreateFolderAlertDialog> {
 class FolderErrorDialog extends StatelessWidget {
   final String content;
 
-  FolderErrorDialog(this.content);
+  const FolderErrorDialog(this.content);
 
   @override
   Widget build(BuildContext context) {

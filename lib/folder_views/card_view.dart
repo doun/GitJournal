@@ -1,9 +1,15 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
+import 'package:gitjournal/core/folder/notes_folder.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder.dart';
 import 'package:gitjournal/folder_views/empty_text_sliver.dart';
 import 'package:gitjournal/folder_views/note_tile.dart';
 
@@ -13,12 +19,12 @@ class CardView extends StatelessWidget {
   final NoteBoolPropertyFunction isNoteSelected;
 
   final NotesFolder folder;
-  final String emptyText;
+  final String? emptyText;
   final bool fixedHeight;
 
   final String searchTerm;
 
-  CardView({
+  const CardView({
     required this.folder,
     required this.noteTapped,
     required this.noteLongPressed,
@@ -31,7 +37,11 @@ class CardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (folder.isEmpty) {
-      return EmptyTextSliver(emptyText: emptyText);
+      if (emptyText != null) {
+        return EmptyTextSliver(emptyText: emptyText!);
+      } else {
+        return const SliverToBoxAdapter(child: SizedBox());
+      }
     }
 
     StaggeredTile stagTile;

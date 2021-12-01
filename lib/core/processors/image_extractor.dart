@@ -1,10 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:equatable/equatable.dart';
 
 class NoteImage extends Equatable {
   final String url;
   final String alt;
 
-  NoteImage({required this.url, required this.alt});
+  const NoteImage({required this.url, required this.alt});
 
   @override
   List<Object> get props => [url, alt];
@@ -23,7 +29,7 @@ class ImageExtractor {
       var alt = match.group(1);
       var url = match.group(2);
 
-      images.add(NoteImage(alt: alt ?? "", url: url ?? ""));
+      var _ = images.add(NoteImage(alt: alt ?? "", url: url ?? ""));
     }
 
     return images;

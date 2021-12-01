@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -10,7 +16,8 @@ class PaymentInfo extends Equatable {
   final String text;
   final String id;
 
-  PaymentInfo({required this.id, required this.value, required this.text});
+  const PaymentInfo(
+      {required this.id, required this.value, required this.text});
 
   @override
   List<Object> get props => [value, text, id];
@@ -48,7 +55,7 @@ class PurchaseSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 50,
       child: CustomPaint(
         painter: ShapePainter(

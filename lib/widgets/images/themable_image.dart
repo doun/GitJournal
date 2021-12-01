@@ -1,26 +1,17 @@
 /*
-Copyright 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
+ * SPDX-FileCopyrightText: 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:universal_io/io.dart';
 
 class ThemableImage extends StatelessWidget {
   final double? width;
@@ -32,7 +23,7 @@ class ThemableImage extends StatelessWidget {
   final ColorCondition colorCondition;
   final Color bg;
 
-  ThemableImage.image(
+  const ThemableImage.image(
     this.file, {
     this.width,
     this.height,
@@ -43,7 +34,7 @@ class ThemableImage extends StatelessWidget {
         themingCondition = ThemingCondition.none,
         colorCondition = ColorCondition.all;
 
-  ThemableImage.svg(
+  const ThemableImage.svg(
     this.string, {
     this.width,
     this.height,
@@ -196,7 +187,7 @@ bool _hasBackground(Drawable draw, double width, double height,
 
 Drawable _themeDrawable(
     Drawable draw, Color? Function(Color? color) transformColor) {
-  if (draw is DrawableStyleable && !(draw is DrawableGroup)) {
+  if (draw is DrawableStyleable && draw is! DrawableGroup) {
     final DrawableStyleable drawStylable = draw;
     draw = drawStylable.mergeStyle(DrawableStyle(
         stroke: drawStylable.style!.stroke != null &&

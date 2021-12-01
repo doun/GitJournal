@@ -1,21 +1,36 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import 'package:function_types/function_types.dart';
 
 import 'package:gitjournal/core/note.dart';
+import 'search.dart';
 
 export 'package:gitjournal/editors/scaffold.dart';
+export 'search.dart';
 
 typedef NoteCallback = void Function(Note);
 
 abstract class Editor {
-  NoteCallback get noteDeletionSelected;
-  NoteCallback get noteEditorChooserSelected;
-  NoteCallback get exitEditorSelected;
-  NoteCallback get renameNoteSelected;
-  NoteCallback get editTagsSelected;
-  NoteCallback get moveNoteToFolderSelected;
-  NoteCallback get discardChangesSelected;
+  EditorCommon get common;
+}
+
+abstract class EditorCommon {
+  void discardChanges(Note note);
+  void renameNote(Note note);
+  void editTags(Note note);
+  void deleteNote(Note note);
+
+  void noteEditorChooserSelected(Note note);
+  void moveNoteToFolderSelected(Note note);
+  void exitEditorSelected(Note note);
 }
 
 abstract class EditorState with ChangeNotifier {
@@ -23,6 +38,9 @@ abstract class EditorState with ChangeNotifier {
   Future<void> addImage(String filePath);
 
   bool get noteModified;
+
+  SearchInfo search(String? text);
+  void scrollToResult(String text, int num);
 }
 
 class TextEditorState {
@@ -56,7 +74,7 @@ class EditorAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool allowEdits;
   final Func0<void> onEditingModeChange;
 
-  EditorAppBar({
+  const EditorAppBar({
     Key? key,
     required this.editor,
     required this.editorState,
@@ -77,7 +95,7 @@ class EditorAppBar extends StatelessWidget implements PreferredSizeWidget {
         key: const ValueKey("NewEntry"),
         icon: Icon(noteModified ? Icons.check : Icons.close),
         onPressed: () {
-          editor.exitEditorSelected(editorState.getNote());
+          editor.common.exitEditorSelected(editorState.getNote());
         },
       ),
       actions: <Widget>[
@@ -93,17 +111,26 @@ class EditorAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.library_books),
           onPressed: () {
             var note = editorState.getNote();
-            editor.noteEditorChooserSelected(note);
+            editor.common.noteEditorChooserSelected(note);
           },
         ),
         IconButton(
           icon: const Icon(Icons.delete),
           onPressed: () {
             var note = editorState.getNote();
-            editor.noteDeletionSelected(note);
+            editor.common.deleteNote(note);
           },
         ),
       ],
     );
   }
+}
+
+Size textSize(String text, TextStyle style) {
+  final TextPainter textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: ui.TextDirection.ltr)
+    ..layout(minWidth: 0, maxWidth: double.infinity);
+  return textPainter.size;
 }

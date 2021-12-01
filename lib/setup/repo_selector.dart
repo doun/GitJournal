@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -10,10 +16,11 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:gitjournal/analytics/analytics.dart';
 import 'package:gitjournal/apis/githost_factory.dart';
 import 'package:gitjournal/error_reporting.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/setup/button.dart';
 import 'package:gitjournal/setup/error.dart';
 import 'package:gitjournal/setup/loading.dart';
-import 'package:gitjournal/utils/logger.dart';
 import 'package:gitjournal/widgets/highlighted_text.dart';
 
 //import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -23,11 +30,12 @@ class GitHostSetupRepoSelector extends StatefulWidget {
   final UserInfo userInfo;
   final Func1<GitHostRepo, void> onDone;
 
-  GitHostSetupRepoSelector({
+  const GitHostSetupRepoSelector({
+    Key? key,
     required this.gitHost,
     required this.userInfo,
     required this.onDone,
-  });
+  }) : super(key: key);
 
   @override
   GitHostSetupRepoSelectorState createState() {
@@ -76,7 +84,7 @@ class GitHostSetupRepoSelectorState extends State<GitHostSetupRepoSelector> {
     _initStateAysnc();
   }
 
-  void _initStateAysnc() async {
+  Future<void> _initStateAysnc() async {
     Log.d("Starting RepoSelector");
 
     try {
@@ -128,7 +136,7 @@ class GitHostSetupRepoSelectorState extends State<GitHostSetupRepoSelector> {
       return GitHostSetupErrorPage(errorMessage);
     }
     if (!fetchedRepos) {
-      return GitHostSetupLoadingPage(tr("setup.repoSelector.loading"));
+      return GitHostSetupLoadingPage(tr(LocaleKeys.setup_repoSelector_loading));
     }
 
     var q = _textController.text.toLowerCase();
@@ -175,7 +183,7 @@ class GitHostSetupRepoSelectorState extends State<GitHostSetupRepoSelector> {
       controller: _textController,
       maxLines: 1,
       decoration: InputDecoration(
-        hintText: tr('setup.repoSelector.hint'),
+        hintText: tr(LocaleKeys.setup_repoSelector_hint),
         border: const OutlineInputBorder(),
         suffixIcon: IconButton(
           onPressed: () => _textController.clear(),
@@ -190,7 +198,7 @@ class GitHostSetupRepoSelectorState extends State<GitHostSetupRepoSelector> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          tr('setup.repoSelector.title'),
+          tr(LocaleKeys.setup_repoSelector_title),
           style: Theme.of(context).textTheme.headline6,
         ),
         const SizedBox(height: 16.0),
@@ -198,33 +206,30 @@ class GitHostSetupRepoSelectorState extends State<GitHostSetupRepoSelector> {
         const SizedBox(height: 8.0),
         Expanded(child: repoBuilder),
         const SizedBox(height: 8.0),
-        Opacity(
-          opacity: canContinue ? 1.0 : 0.0,
-          child: GitHostSetupButton(
-            text: tr('setup.next'),
-            onPressed: () async {
-              if (selectedRepo != null) {
-                widget.onDone(selectedRepo!);
-                return;
-              }
+        GitHostSetupButton(
+          text: tr(LocaleKeys.setup_next),
+          enabled: canContinue,
+          onPressed: () async {
+            if (selectedRepo != null) {
+              widget.onDone(selectedRepo!);
+              return;
+            }
 
-              try {
-                var repoName = _textController.text.trim();
-                var repo =
-                    await widget.gitHost.createRepo(repoName).getOrThrow();
-                widget.onDone(repo);
-                return;
-              } catch (e, stacktrace) {
-                _handleGitHostException(e as Exception, stacktrace);
-              }
-            },
-          ),
+            try {
+              var repoName = _textController.text.trim();
+              var repo = await widget.gitHost.createRepo(repoName).getOrThrow();
+              widget.onDone(repo);
+              return;
+            } catch (e, stacktrace) {
+              _handleGitHostException(e as Exception, stacktrace);
+            }
+          },
         ),
         const SizedBox(height: 32.0),
       ],
     );
 
-    return SafeArea(child: Center(child: columns));
+    return Center(child: columns);
   }
 
   Widget _buildCreateRepoTile() {
@@ -234,7 +239,9 @@ class GitHostSetupRepoSelectorState extends State<GitHostSetupRepoSelector> {
     return ListTile(
       leading: const Icon(Icons.add),
       title: Align(
-        child: Text(tr('setup.repoSelector.create', args: [fullRepoName])),
+        child: Text(
+          tr(LocaleKeys.setup_repoSelector_create, args: [fullRepoName]),
+        ),
         alignment: const Alignment(-1.3, 0),
       ),
       contentPadding: const EdgeInsets.all(0.0),
@@ -277,7 +284,7 @@ class _RepoTile extends StatelessWidget {
   final void Function() onTap;
   final bool selected;
 
-  _RepoTile({
+  const _RepoTile({
     required this.repo,
     required this.searchText,
     required this.onTap,
@@ -391,7 +398,7 @@ class _SmartDateTime extends StatelessWidget {
   final DateTime? dt;
   final TextStyle? style;
 
-  _SmartDateTime(this.dt, this.style);
+  const _SmartDateTime(this.dt, this.style);
 
   static final _dateFormat = DateFormat('d MMM yyyy');
   static final _dateFormatWithoutYear = DateFormat('d MMM');

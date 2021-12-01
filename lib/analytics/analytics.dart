@@ -1,237 +1,198 @@
-import 'dart:io' show Platform;
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' as foundation;
 
-import 'package:gitjournal/app.dart';
+import 'package:fixnum/fixnum.dart';
+import 'package:flutter_runtime_env/flutter_runtime_env.dart';
+import 'package:function_types/function_types.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
 import 'package:gitjournal/error_reporting.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/logger/logger.dart';
+import 'config.dart';
+import 'controller.dart';
+import 'device_info.dart';
+import 'events.dart';
+import 'generated/analytics.pb.dart' as pb;
+import 'network.dart';
+import 'package_info.dart';
+import 'storage.dart';
 
-Analytics getAnalytics() {
-  return JournalApp.analytics;
-}
-
-enum Event {
-  NoteAdded,
-  NoteUpdated,
-  NoteDeleted,
-  NoteUndoDeleted,
-  NoteRenamed,
-  NoteMoved,
-  FileRenamed,
-  FolderAdded,
-  FolderDeleted,
-  FolderRenamed,
-  FolderConfigUpdated,
-  RepoSynced,
-
-  DrawerSetupGitHost,
-  DrawerShare,
-  DrawerRate,
-  DrawerFeedback,
-  DrawerBugReport,
-  DrawerSettings,
-
-  PurchaseScreenOpen,
-  PurchaseScreenClose,
-  PurchaseScreenThankYou,
-
-  GitHostSetupError,
-  GitHostSetupComplete,
-  GitHostSetupGitCloneError,
-  GitHostSetupButtonClick,
-
-  Settings,
-  FeatureTimelineGithubClicked,
-
-  AppFirstOpen,
-  AppUpdate,
-
-  // FIXME: Add os_update
-
-  /*
-  Firebase Automatic Events:
-    app_update:
-      previous_app_version
-
-    first_open
-    in_app_purchase
-    screen_view
-    session_start
-    user_engagement
-
-  */
-}
-
-String _eventToString(Event e) {
-  switch (e) {
-    case Event.NoteAdded:
-      return "note_added";
-    case Event.NoteUpdated:
-      return "note_updated";
-    case Event.NoteDeleted:
-      return "note_deleted";
-    case Event.NoteUndoDeleted:
-      return "note_undo_deleted";
-    case Event.NoteRenamed:
-      return "note_renamed";
-    case Event.NoteMoved:
-      return "note_moved";
-
-    case Event.FileRenamed:
-      return "file_renamed";
-
-    case Event.FolderAdded:
-      return "folder_added";
-    case Event.FolderDeleted:
-      return "folder_deleted";
-    case Event.FolderRenamed:
-      return "folder_renamed";
-    case Event.FolderConfigUpdated:
-      return "folder_config_updated";
-
-    case Event.RepoSynced:
-      return "repo_synced";
-
-    case Event.DrawerSetupGitHost:
-      return "drawer_setupGitHost";
-    case Event.DrawerShare:
-      return "drawer_share";
-    case Event.DrawerRate:
-      return "drawer_rate";
-    case Event.DrawerFeedback:
-      return "drawer_feedback";
-    case Event.DrawerBugReport:
-      return "drawer_bugreport";
-    case Event.DrawerSettings:
-      return "drawer_settings";
-
-    case Event.PurchaseScreenOpen:
-      return "purchase_screen_open";
-    case Event.PurchaseScreenClose:
-      return "purchase_screen_close";
-    case Event.PurchaseScreenThankYou:
-      return "purchase_screen_thank_you";
-
-    case Event.GitHostSetupError:
-      return "githostsetup_error";
-    case Event.GitHostSetupComplete:
-      return "onboarding_complete";
-    case Event.GitHostSetupGitCloneError:
-      return "onboarding_gitClone_error";
-    case Event.GitHostSetupButtonClick:
-      return "githostsetup_button_click";
-
-    case Event.Settings:
-      return "settings";
-
-    case Event.FeatureTimelineGithubClicked:
-      return "feature_timeline_github_clicked";
-
-    case Event.AppFirstOpen:
-      return "gj_first_open";
-    case Event.AppUpdate:
-      return "gj_app_update";
-  }
-}
+export 'events.dart';
 
 class Analytics {
-  // var firebase = FirebaseAnalytics();
-  bool enabled = false;
+  final bool canBeEnabled;
 
-  Future<void> log({
-    required Event e,
-    Map<String, String> parameters = const {},
-  }) async {
-    String name = _eventToString(e);
-    if (enabled) {
-      if (Platform.isAndroid || Platform.isIOS) {
-        // await firebase.logEvent(name: name, parameters: parameters);
-      }
-    }
-    captureErrorBreadcrumb(name: name, parameters: parameters);
+  final Func2<String, Map<String, String>, void> analyticsCallback;
+  final AnalyticsStorage storage;
+  final SharedPreferences pref;
+  final AnalyticsConfig _config;
+  late final AnalyticsController _controller;
+
+  Analytics._({
+    required this.storage,
+    required this.analyticsCallback,
+    required this.canBeEnabled,
+    required this.pref,
+    required this.pseudoId,
+    required AnalyticsConfig config,
+  }) : _config = config {
+    _sessionId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    _controller = AnalyticsController(
+      storage: storage,
+      isEnabled: () => enabled,
+    );
   }
 
-  Future<void> setAnalyticsCollectionEnabled(bool enabled) async {
-    this.enabled = enabled;
-    if (Platform.isAndroid || Platform.isIOS) {
-      // await firebase.setAnalyticsCollectionEnabled(enabled);
+  static Analytics? _global;
+  static Future<Analytics> init({
+    required SharedPreferences pref,
+    required Func2<String, Map<String, String>, void> analyticsCallback,
+    required String storagePath,
+  }) async {
+    bool inFireBaseTestLab = await inFirebaseTestLab();
+    bool canBeEnabled = !foundation.kDebugMode && !inFireBaseTestLab;
+
+    var pseudoId = pref.getString("pseudoId");
+    if (pseudoId == null) {
+      pseudoId = const Uuid().v4();
+      var _ = pref.setString("pseudoId", pseudoId);
     }
+
+    var config = AnalyticsConfig("", pref);
+    config.load(pref);
+
+    _global = Analytics._(
+      analyticsCallback: analyticsCallback,
+      storage: AnalyticsStorage(storagePath),
+      canBeEnabled: canBeEnabled,
+      pseudoId: pseudoId,
+      pref: pref,
+      config: config,
+    );
+
+    Log.d("Analytics Collection: ${_global!.enabled}");
+    Log.d("Analytics Storage: $storagePath");
+
+    _global!._sendAppUpdateEvent();
+
+    return _global!;
+  }
+
+  bool get enabled {
+    return canBeEnabled && _config.enabled;
+  }
+
+  set enabled(bool newVal) {
+    if (enabled != newVal) {
+      _config.enabled = newVal;
+      _config.save();
+
+      logEvent(
+        Event.AnalyticsLevelChanged,
+        parameters: {"state": newVal.toString()},
+      );
+    }
+  }
+
+  static Analytics? get instance => _global;
+
+  late int _sessionId;
+  late String pseudoId;
+  var userProps = <String, String>{};
+
+  Future<void> log(
+    Event e, [
+    Map<String, String> parameters = const {},
+  ]) async {
+    String name = eventToString(e);
+
+    await storage.logEvent(_buildEvent(name, parameters));
+    analyticsCallback(name, parameters);
+
+    await _sendAnalytics();
   }
 
   Future<void> setCurrentScreen({required String screenName}) async {
-    if (!enabled) {
-      return;
-    }
-    if (Platform.isAndroid || Platform.isIOS) {
-      // await firebase.setCurrentScreen(screenName: screenName);
-    }
+    return log(Event.ScreenView, {'screen_name': screenName});
   }
 
   Future<void> setUserProperty({
     required String name,
     required String value,
   }) async {
-    if (!enabled) {
-      return;
-    }
-    if (Platform.isAndroid || Platform.isIOS) {
-      // await firebase.setUserProperty(name: name, value: value);
-    }
+    userProps[name] = value;
   }
-}
 
-void logEvent(Event event, {Map<String, String> parameters = const {}}) {
-  getAnalytics().log(e: event, parameters: parameters);
-  Log.d("$event", props: parameters);
-}
+  pb.Event _buildEvent(String name, Map<String, String> params) {
+    return pb.Event(
+      name: name,
+      date: Int64(DateTime.now().millisecondsSinceEpoch ~/ 1000),
+      params: params,
+      pseudoId: pseudoId,
+      userProperties: userProps,
+      sessionID: _sessionId,
+    );
+  }
 
-class AnalyticsRouteObserver extends RouteObserver<PageRoute<dynamic>> {
-  void _sendScreenView(PageRoute<dynamic> route) async {
-    var screenName = route.settings.name;
-    if (route.runtimeType.toString().startsWith("_SearchPageRoute")) {
-      screenName = "/search";
-    }
-
-    if (screenName == null) {
-      screenName = 'Unknown';
+  // FIXME: Send the backlog events when disabled
+  Future<void> _sendAnalytics() async {
+    var shouldSend = await _controller.shouldSend();
+    if (!shouldSend) {
       return;
     }
 
-    try {
-      await getAnalytics().setCurrentScreen(screenName: screenName);
-    } catch (e, stackTrace) {
-      Log.e("AnalyticsRouteObserver", ex: e, stacktrace: stackTrace);
-    }
+    await storage.fetchAll((events) async {
+      var msg = pb.AnalyticsMessage(
+        appId: 'io.gitjournal',
+        deviceInfo: await buildDeviceInfo(),
+        packageInfo: await buildPackageInfo(),
+        events: events,
+      );
+      Log.i("Sending ${events.length} events");
+      var result = await sendAnalytics(msg);
+      if (result.isFailure) {
+        Log.e(
+          "Failed to send Analytics",
+          ex: result.error,
+          stacktrace: result.stackTrace,
+        );
+        logException(result.error!, result.stackTrace!);
+        return false;
+      }
+
+      Log.i("Sent ${events.length} Analytics Events");
+      return true;
+    });
   }
 
-  @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    super.didPush(route, previousRoute);
-    if (route is PageRoute) {
-      _sendScreenView(route);
-    } else {
-      // print("route in not a PageRoute! $route");
-    }
-  }
+  Future<void> _sendAppUpdateEvent() async {
+    var info = await PackageInfo.fromPlatform();
+    var version = info.version;
 
-  @override
-  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
-    if (newRoute is PageRoute) {
-      _sendScreenView(newRoute);
-    } else {
-      // print("newRoute in not a PageRoute! $newRoute");
-    }
-  }
+    Log.i("App Version: $version");
+    Log.i("App Build Number: ${info.buildNumber}");
 
-  @override
-  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    super.didPop(route, previousRoute);
-    if (previousRoute is PageRoute && route is PageRoute) {
-      _sendScreenView(previousRoute);
-    } else {
-      // print("previousRoute in not a PageRoute! $previousRoute");
-      // print("route in not a PageRoute! $route");
+    if (_config.appVersion == version) {
+      return;
     }
+
+    logEvent(Event.AppUpdate, parameters: {
+      "version": version,
+      "previous_app_version": _config.appVersion,
+      "app_name": info.appName,
+      "package_name": info.packageName,
+      "build_number": info.buildNumber,
+    });
+
+    _config.appVersion = version;
+    _config.save();
   }
 }

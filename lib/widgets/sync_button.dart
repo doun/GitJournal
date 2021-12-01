@@ -1,14 +1,22 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 
 import 'package:badges/badges.dart';
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:git_bindings/git_bindings.dart';
 import 'package:provider/provider.dart';
 
+import 'package:gitjournal/generated/locale_keys.g.dart';
 import 'package:gitjournal/repository.dart';
+import 'package:gitjournal/sync_attempt.dart';
 import 'package:gitjournal/utils/utils.dart';
 
 class SyncButton extends StatefulWidget {
@@ -95,12 +103,15 @@ class _SyncButtonState extends State<SyncButton> {
     );
   }
 
-  void _syncRepo() async {
+  Future<void> _syncRepo() async {
     try {
       final repo = Provider.of<GitJournalRepo>(context, listen: false);
       await repo.syncNotes();
     } on GitException catch (e) {
-      showSnackbar(context, tr('widgets.SyncButton.error', args: [e.cause]));
+      showSnackbar(
+        context,
+        tr(LocaleKeys.widgets_SyncButton_error, args: [e.cause]),
+      );
     } catch (e) {
       showSnackbar(context, e.toString());
     }
@@ -124,7 +135,7 @@ class BlinkingIcon extends StatefulWidget {
   final Widget child;
   final int interval;
 
-  BlinkingIcon({required this.child, this.interval = 500, Key? key})
+  const BlinkingIcon({required this.child, this.interval = 500, Key? key})
       : super(key: key);
 
   @override
@@ -149,7 +160,7 @@ class _BlinkingIconState extends State<BlinkingIcon>
       curve: Curves.linear,
     );
 
-    _controller.repeat(reverse: true);
+    var _ = _controller.repeat(reverse: true);
   }
 
   @override
@@ -170,7 +181,7 @@ class _BlinkingIconState extends State<BlinkingIcon>
 class GitPendingChangesBadge extends StatelessWidget {
   final Widget child;
 
-  GitPendingChangesBadge({required this.child});
+  const GitPendingChangesBadge({required this.child});
 
   @override
   Widget build(BuildContext context) {

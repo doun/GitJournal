@@ -1,18 +1,8 @@
 /*
-Copyright 2021 Vishesh Handa <me@vhanda.in>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,16 +12,18 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:function_types/function_types.dart';
 
 import 'package:gitjournal/apis/githost_factory.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
 import 'button.dart';
 
 class GitCloneUrlPage extends StatefulWidget {
   final Func1<String, void> doneFunction;
   final String initialValue;
 
-  GitCloneUrlPage({
+  const GitCloneUrlPage({
     required this.doneFunction,
     required this.initialValue,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   GitCloneUrlPageState createState() {
@@ -48,7 +40,7 @@ class GitCloneUrlPageState extends State<GitCloneUrlPage> {
 
   @override
   Widget build(BuildContext context) {
-    final formSubmitted = () {
+    void formSubmitted() {
       if (_formKey.currentState!.validate()) {
         _formKey.currentState!.save();
 
@@ -56,7 +48,7 @@ class GitCloneUrlPageState extends State<GitCloneUrlPage> {
         widget.doneFunction(url.trim());
         inputFormFocus.unfocus();
       }
-    };
+    }
 
     var inputForm = Form(
       key: _formKey,
@@ -73,6 +65,7 @@ class GitCloneUrlPageState extends State<GitCloneUrlPage> {
         textInputAction: TextInputAction.done,
         onFieldSubmitted: (String _) => formSubmitted(),
         initialValue: widget.initialValue,
+        autocorrect: false,
       ),
     );
 
@@ -83,7 +76,7 @@ class GitCloneUrlPageState extends State<GitCloneUrlPage> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            tr("setup.cloneUrl.enter"),
+            LocaleKeys.setup_cloneUrl_enter.tr(),
             style: Theme.of(context).textTheme.headline5,
           ),
         ),
@@ -94,7 +87,7 @@ class GitCloneUrlPageState extends State<GitCloneUrlPage> {
         ),
         const SizedBox(height: 8.0),
         GitHostSetupButton(
-          text: "Next",
+          text: LocaleKeys.setup_next.tr(),
           onPressed: formSubmitted,
         ),
       ],
@@ -108,12 +101,13 @@ class GitCloneUrlKnownProviderPage extends StatefulWidget {
   final GitHostType gitHostType;
   final String initialValue;
 
-  GitCloneUrlKnownProviderPage({
+  const GitCloneUrlKnownProviderPage({
     required this.doneFunction,
     required this.launchCreateUrlPage,
     required this.gitHostType,
     required this.initialValue,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   GitCloneUrlKnownProviderPageState createState() {
@@ -136,7 +130,7 @@ class GitCloneUrlKnownProviderPageState
         _formKey.currentState!.save();
 
         var url = sshUrlKey.currentState!.value!;
-        widget.doneFunction(url.trim());
+        widget.doneFunction(_cleanupGitUrl(url));
         inputFormFocus.unfocus();
       }
     };
@@ -164,33 +158,33 @@ class GitCloneUrlKnownProviderPageState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          tr("setup.cloneUrl.manual.title"),
+          LocaleKeys.setup_cloneUrl_manual_title.tr(),
           style: Theme.of(context).textTheme.headline6,
         ),
         const SizedBox(height: 32.0),
 
         // Step 1
         Text(
-          tr("setup.cloneUrl.manual.step1"),
+          LocaleKeys.setup_cloneUrl_manual_step1.tr(),
           style: Theme.of(context).textTheme.subtitle2,
         ),
         const SizedBox(height: 8.0),
         GitHostSetupButton(
-          text: tr("setup.cloneUrl.manual.button"),
+          text: LocaleKeys.setup_cloneUrl_manual_button.tr(),
           onPressed: widget.launchCreateUrlPage,
         ),
         const SizedBox(height: 16.0),
 
         // Step 2
         Text(
-          tr("setup.cloneUrl.manual.step2"),
+          LocaleKeys.setup_cloneUrl_manual_step2.tr(),
           style: Theme.of(context).textTheme.subtitle2,
         ),
         const SizedBox(height: 8.0),
         inputForm,
         const SizedBox(height: 16.0),
         GitHostSetupButton(
-          text: tr("setup.next"),
+          text: LocaleKeys.setup_next.tr(),
           onPressed: formSubmitted,
         ),
       ],
@@ -200,19 +194,35 @@ class GitCloneUrlKnownProviderPageState
 
 // Returns null when valid
 String? _isCloneUrlValid(String? url) {
-  url = url!.trim();
+  if (url == null) {
+    return LocaleKeys.setup_cloneUrl_validator_empty.tr();
+  }
+  url = _cleanupGitUrl(url);
   if (url.isEmpty) {
-    return tr("setup.cloneUrl.validator.empty");
+    return LocaleKeys.setup_cloneUrl_validator_empty.tr();
   }
 
   var result = gitUrlParse(url);
   if (result == null) {
-    return tr("setup.cloneUrl.validator.invalid");
+    return LocaleKeys.setup_cloneUrl_validator_invalid.tr();
   }
 
   if (result.protocol != 'ssh') {
-    return tr("setup.cloneUrl.validator.onlySsh");
+    return LocaleKeys.setup_cloneUrl_validator_onlySsh.tr();
   }
 
   return null;
+}
+
+String _cleanupGitUrl(String url) {
+  const gitHub = 'git@github.com';
+  const gitLab = 'git@gitlab.com';
+
+  if (url.startsWith('$gitHub/')) {
+    url = url.replaceFirst('$gitHub/', '$gitHub:');
+  } else if (url.startsWith('$gitLab/')) {
+    url = url.replaceFirst('$gitLab/', '$gitLab:');
+  }
+
+  return url.trim();
 }

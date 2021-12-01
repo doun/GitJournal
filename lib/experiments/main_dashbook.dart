@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:dashbook/dashbook.dart';
@@ -6,13 +12,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:gitjournal/app_router.dart';
+import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/repository_manager.dart';
-import 'package:gitjournal/settings/app_settings.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/settings/app_config.dart';
 
-void main() async {
+Future<void> main() async {
   //TestWidgetsFlutterBinding.ensureInitialized();
-  WidgetsFlutterBinding.ensureInitialized();
+  var _ = WidgetsFlutterBinding.ensureInitialized();
 
   final dashbook = Dashbook();
 
@@ -22,10 +28,10 @@ void main() async {
 
   var pref = await SharedPreferences.getInstance();
 
-  AppSettings.instance.load(pref);
+  AppConfig.instance.load(pref);
 
-  var appSettings = AppSettings.instance;
-  Log.i("AppSetting ${appSettings.toMap()}");
+  var appConfig = AppConfig.instance;
+  Log.i("AppConfig ${appConfig.toMap()}");
 
   final gitBaseDirectory = (await getTemporaryDirectory()).path;
   final cacheDir = (await getTemporaryDirectory()).path;
@@ -35,16 +41,19 @@ void main() async {
     cacheDir: cacheDir,
     pref: pref,
   );
-  await repoManager.buildActiveRepository();
-  var repo = repoManager.currentRepo;
+  var repo = await repoManager.buildActiveRepository();
   var settings = repo.settings;
-  var appRouter = AppRouter(settings: settings, appSettings: appSettings);
+  var storageConfig = repo.storageConfig;
+  var appRouter = AppRouter(
+      settings: settings, appConfig: appConfig, storageConfig: storageConfig);
 
   for (var routeName in AppRoute.all) {
-    dashbook.storiesOf(routeName).decorator(CenterDecorator()).add('all',
-        (context) {
+    var _ = dashbook
+        .storiesOf(routeName)
+        .decorator(CenterDecorator())
+        .add('all', (context) {
       return appRouter.screenForRoute(
-          routeName, repo, settings, "", [], () {})!;
+          routeName, repo, storageConfig, "", [], () {})!;
     });
   }
 

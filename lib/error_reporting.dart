@@ -1,6 +1,12 @@
-import 'dart:async';
-import 'dart:io' show Platform;
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/foundation.dart';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -8,11 +14,11 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sentry/sentry.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:universal_io/io.dart' show Platform;
 
 import 'package:gitjournal/.env.dart';
-import 'package:gitjournal/app.dart';
-import 'package:gitjournal/settings/app_settings.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/logger/logger.dart';
+import 'package:gitjournal/settings/app_config.dart';
 
 Future<void> initSentry() async {
   if (Sentry.isEnabled) {
@@ -20,7 +26,7 @@ Future<void> initSentry() async {
   }
   await SentryFlutter.init(
     (options) {
-      options.dsn = environment['sentry'];
+      options.dsn = Env.sentry;
     },
   );
 }
@@ -64,9 +70,6 @@ Future<SentryEvent> get _environmentEvent async {
         build: packageInfo.buildNumber,
       ),
     ),
-    user: SentryUser(
-      id: AppSettings.instance.pseudoId,
-    ),
   );
   return environment;
 }
@@ -84,13 +87,17 @@ void flutterOnErrorHandler(FlutterErrorDetails details) {
 bool get reportCrashes => _reportCrashes ??= _initReportCrashes();
 bool? _reportCrashes;
 bool _initReportCrashes() {
-  return !JournalApp.isInDebugMode && AppSettings.instance.collectCrashReports;
+  return !foundation.kDebugMode && AppConfig.instance.collectCrashReports;
 }
 
-Future<void> reportError(dynamic error, StackTrace stackTrace) async {
+Future<void> reportError(Object error, StackTrace stackTrace) async {
+  assert(error is Exception || error is Error);
   Log.e("Uncaught Exception", ex: error, stacktrace: stackTrace);
 
   if (reportCrashes) {
+    if (error is! Exception) {
+      error = Exception("Error: $error");
+    }
     captureSentryException(error, stackTrace);
   }
 }
@@ -121,10 +128,7 @@ Future<void> logExceptionWarning(Object e, StackTrace stackTrace) async {
 
 List<Breadcrumb> breadcrumbs = [];
 
-void captureErrorBreadcrumb({
-  required String name,
-  required Map<String, String> parameters,
-}) {
+void captureErrorBreadcrumb(String name, Map<String, String> parameters) {
   if (!reportCrashes) {
     return;
   }
@@ -150,9 +154,10 @@ Future<void> captureSentryException(
       level: level,
     );
 
-    await Sentry.captureEvent(event, stackTrace: Trace.from(stackTrace).terse);
+    var _ = await Sentry.captureEvent(event,
+        stackTrace: Trace.from(stackTrace).terse);
     return;
-  } catch (e) {
-    print("Failed to report with Sentry: $e");
+  } catch (e, st) {
+    Log.e("Failed to report with Sentry:", ex: e, stacktrace: st);
   }
 }

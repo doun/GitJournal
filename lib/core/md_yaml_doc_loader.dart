@@ -1,18 +1,24 @@
-import 'dart:io';
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:isolate';
 
 import 'package:dart_git/utils/result.dart';
 import 'package:synchronized/synchronized.dart';
+import 'package:universal_io/io.dart';
 
 import 'package:gitjournal/core/md_yaml_doc.dart';
 import 'package:gitjournal/core/md_yaml_doc_codec.dart';
 
 class MdYamlDocLoader {
   Isolate? _isolate;
-  ReceivePort _receivePort = ReceivePort();
+  final _receivePort = ReceivePort();
   SendPort? _sendPort;
 
-  var _loadingLock = Lock();
+  final _loadingLock = Lock();
 
   Future<void> _initIsolate() async {
     if (_isolate != null && _sendPort != null) return;
@@ -36,6 +42,8 @@ class MdYamlDocLoader {
   }
 
   Future<Result<MdYamlDoc>> loadDoc(String filePath) async {
+    assert(filePath.startsWith('/'));
+
     await _initIsolate();
 
     final file = File(filePath);
@@ -74,7 +82,7 @@ void _isolateMain(SendPort toMainSender) {
 
   final _serializer = MarkdownYAMLCodec();
 
-  fromMainRec.listen((data) async {
+  var _ = fromMainRec.listen((data) async {
     assert(data is _LoadingMessage);
     var msg = data as _LoadingMessage;
 

@@ -1,13 +1,20 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'package:gitjournal/error_reporting.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
 import 'package:gitjournal/iap/iap.dart';
 import 'package:gitjournal/iap/purchase_slider.dart';
-import 'package:gitjournal/settings/app_settings.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/logger/logger.dart';
+import 'package:gitjournal/settings/app_config.dart';
 
 // ignore_for_file: cancel_subscriptions
 
@@ -16,7 +23,7 @@ typedef PurchaseCallback = void Function(String, SubscriptionStatus?);
 class PurchaseManager {
   late InAppPurchaseConnection con;
   late StreamSubscription<List<PurchaseDetails>> _subscription;
-  List<PurchaseCallback> _callbacks = [];
+  final List<PurchaseCallback> _callbacks = [];
 
   static String? error;
   static PurchaseManager? _instance;
@@ -50,7 +57,8 @@ class PurchaseManager {
     _instance!._subscription.cancel();
   }
 
-  void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetails) async {
+  Future<void> _listenToPurchaseUpdated(
+      List<PurchaseDetails> purchaseDetails) async {
     for (var pd in purchaseDetails) {
       await _handlePurchaseUpdate(pd);
     }
@@ -75,7 +83,7 @@ class PurchaseManager {
         if (subStatus.isPro) {
           _deliverProduct(subStatus);
         } else {
-          _handleError(tr('widgets.PurchaseWidget.failed'));
+          _handleError(tr(LocaleKeys.widgets_PurchaseWidget_failed));
           return;
         }
       } catch (err) {
@@ -86,7 +94,7 @@ class PurchaseManager {
       Log.i("Pending Complete Purchase - ${purchaseDetails.productID}");
 
       try {
-        await InAppPurchaseConnection.instance
+        var _ = await InAppPurchaseConnection.instance
             .completePurchase(purchaseDetails);
       } catch (e, stackTrace) {
         logException(e, stackTrace);
@@ -111,10 +119,10 @@ class PurchaseManager {
   }
 
   void _deliverProduct(SubscriptionStatus status) {
-    var appSettings = AppSettings.instance;
-    appSettings.proMode = status.isPro;
-    appSettings.proExpirationDate = status.expiryDate.toIso8601String();
-    appSettings.save();
+    var appConfig = AppConfig.instance;
+    appConfig.proMode = status.isPro;
+    appConfig.proExpirationDate = status.expiryDate.toIso8601String();
+    appConfig.save();
 
     Log.i("Calling Purchase Completed Callbacks: ${_callbacks.length}");
     for (var callback in _callbacks) {

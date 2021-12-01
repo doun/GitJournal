@@ -1,18 +1,8 @@
 /*
-Copyright 2020-2021 Vishesh Handa <me@vhanda.in>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'package:flutter/material.dart';
 
@@ -21,20 +11,25 @@ import 'package:function_types/function_types.dart';
 import 'package:provider/provider.dart';
 import 'package:time/time.dart';
 
+import 'package:gitjournal/core/file/file.dart';
+import 'package:gitjournal/core/folder/notes_folder.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/core/md_yaml_doc.dart';
 import 'package:gitjournal/core/md_yaml_doc_codec.dart';
 import 'package:gitjournal/core/note.dart';
 import 'package:gitjournal/core/note_serializer.dart';
-import 'package:gitjournal/core/notes_folder.dart';
-import 'package:gitjournal/core/notes_folder_fs.dart';
 import 'package:gitjournal/editors/note_body_editor.dart';
 import 'package:gitjournal/editors/note_title_editor.dart';
 import 'package:gitjournal/features.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/repository.dart';
 import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/settings/settings_widgets.dart';
+import 'package:gitjournal/settings/widgets/settings_list_preference.dart';
 import 'package:gitjournal/widgets/pro_overlay.dart';
 
 class NoteMetadataSettingsScreen extends StatefulWidget {
+  static const routePath = '/settings/noteMetaData';
+
   @override
   _NoteMetadataSettingsScreenState createState() =>
       _NoteMetadataSettingsScreenState();
@@ -57,32 +52,50 @@ class _NoteMetadataSettingsScreenState
   Widget build(BuildContext context) {
     var textTheme = Theme.of(context).textTheme;
     var settings = Provider.of<Settings>(context);
+    var folderConfig = Provider.of<NotesFolderConfig>(context);
 
-    var parent = NotesFolderFS(null, '', settings);
-    var note = Note(parent, "fileName.md");
-    note.title = tr("settings.noteMetaData.exampleTitle");
-    note.body = tr("settings.noteMetaData.exampleBody");
-    note.created = created;
-    note.modified = modified;
-    note.tags = {
-      tr("settings.noteMetaData.exampleTag1"),
-      tr("settings.noteMetaData.exampleTag2"),
-    };
-
+    var extraProps = <String, dynamic>{};
     if (settings.customMetaData != "") {
       var customMetaDataMap =
           MarkdownYAMLCodec.parseYamlText(settings.customMetaData);
       if (customMetaDataMap.isNotEmpty) {
-        note.extraProps = customMetaDataMap;
+        extraProps = customMetaDataMap;
       }
     }
+
+    var repo = context.read<GitJournalRepo>();
+    var parent = NotesFolderFS.root(folderConfig, repo.fileStorage);
+    var note = Note.build(
+      title: tr("settings.noteMetaData.exampleTitle"),
+      body: tr("settings.noteMetaData.exampleBody"),
+      parent: parent,
+      fileFormat: NoteFileFormat.Markdown,
+      noteType: NoteType.Unknown,
+      file: File(
+        filePath: '',
+        repoPath: '',
+        created: created,
+        modified: modified,
+        oid: GitHash.zero(),
+        fileLastModified: DateTime.now(),
+      ),
+      created: created,
+      modified: modified,
+      extraProps: extraProps,
+      tags: {
+        LocaleKeys.settings_noteMetaData_exampleTag1.tr(),
+        LocaleKeys.settings_noteMetaData_exampleTag2.tr(),
+      },
+      doc: MdYamlDoc(),
+      serializerSettings: NoteSerializationSettings.fromConfig(parent.config),
+    );
 
     var body = Column(
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            tr("settings.noteMetaData.text"),
+            LocaleKeys.settings_noteMetaData_text.tr(),
             style: textTheme.bodyText1,
           ),
         ),
@@ -94,76 +107,77 @@ class _NoteMetadataSettingsScreenState
         const Divider(),
         SwitchListTile(
           title: Text(tr("settings.noteMetaData.enableHeader")),
-          value: settings.yamlHeaderEnabled,
+          value: folderConfig.yamlHeaderEnabled,
           onChanged: (bool newVal) {
             setState(() {
-              settings.yamlHeaderEnabled = newVal;
-              var titleInYaml = settings.titleSettings == SettingsTitle.InYaml;
+              folderConfig.yamlHeaderEnabled = newVal;
+              var titleInYaml =
+                  folderConfig.titleSettings == SettingsTitle.InYaml;
               if (newVal == false && titleInYaml) {
-                settings.titleSettings = SettingsTitle.Default;
+                folderConfig.titleSettings = SettingsTitle.Default;
               }
-              settings.save();
+              folderConfig.save();
             });
           },
         ),
         ListPreference(
-          title: tr("settings.noteMetaData.modified"),
-          options: [
+          title: LocaleKeys.settings_noteMetaData_modified.tr(),
+          options: const [
             "modified",
             "mod",
             "lastmodified",
             "lastmod",
             "updated",
           ],
-          currentOption: settings.yamlModifiedKey,
+          currentOption: folderConfig.yamlModifiedKey,
           onChange: (String newVal) {
             setState(() {
-              settings.yamlModifiedKey = newVal;
-              settings.save();
+              folderConfig.yamlModifiedKey = newVal;
+              folderConfig.save();
             });
           },
-          enabled: settings.yamlHeaderEnabled,
+          enabled: folderConfig.yamlHeaderEnabled,
         ),
         ListPreference(
-          title: tr("settings.noteMetaData.created"),
-          options: [
+          title: LocaleKeys.settings_noteMetaData_created.tr(),
+          options: const [
             "created",
             "date",
           ],
-          currentOption: settings.yamlCreatedKey,
+          currentOption: folderConfig.yamlCreatedKey,
           onChange: (String newVal) {
             setState(() {
-              settings.yamlCreatedKey = newVal;
-              settings.save();
+              folderConfig.yamlCreatedKey = newVal;
+              folderConfig.save();
             });
           },
-          enabled: settings.yamlHeaderEnabled,
+          enabled: folderConfig.yamlHeaderEnabled,
         ),
         ListPreference(
-          title: tr("settings.noteMetaData.tags"),
-          options: [
+          title: LocaleKeys.settings_noteMetaData_tags.tr(),
+          options: const [
             "tags",
             "categories",
             "keywords",
           ],
-          currentOption: settings.yamlTagsKey,
+          currentOption: folderConfig.yamlTagsKey,
           onChange: (String newVal) {
             setState(() {
-              settings.yamlTagsKey = newVal;
-              settings.save();
+              folderConfig.yamlTagsKey = newVal;
+              folderConfig.save();
             });
           },
-          enabled: settings.yamlHeaderEnabled,
+          enabled: folderConfig.yamlHeaderEnabled,
         ),
         ListPreference(
           title: tr("settings.noteMetaData.titleMetaData.title"),
           options:
               SettingsTitle.options.map((f) => f.toPublicString()).toList(),
-          currentOption: settings.titleSettings.toPublicString(),
+          currentOption: folderConfig.titleSettings.toPublicString(),
           onChange: (String publicStr) {
             var format = SettingsTitle.fromPublicString(publicStr);
-            settings.titleSettings = format;
-            settings.save();
+            folderConfig.titleSettings = format;
+            folderConfig.save();
             setState(() {});
           },
         ),
@@ -200,7 +214,7 @@ class _NoteMetadataSettingsScreenState
 class NoteOutputExample extends StatelessWidget {
   final Note note;
 
-  NoteOutputExample(this.note);
+  const NoteOutputExample(this.note);
 
   @override
   Widget build(BuildContext context) {
@@ -208,11 +222,10 @@ class NoteOutputExample extends StatelessWidget {
     var style = theme.textTheme.subtitle1!;
     style = style.copyWith(fontFamily: "Roboto Mono");
 
-    var settings = Provider.of<Settings>(context);
-
     var doc = MdYamlDoc();
-    NoteSerializer.fromConfig(NotesFolderConfig.fromSettings(null, settings))
-        .encode(note, doc);
+    var folderConfig = Provider.of<NotesFolderConfig>(context);
+    var serialSettings = NoteSerializationSettings.fromConfig(folderConfig);
+    NoteSerializer.fromConfig(serialSettings).encode(note, doc);
 
     var codec = MarkdownYAMLCodec();
     var noteStr = codec.encode(doc);
@@ -226,7 +239,10 @@ class NoteOutputExample extends StatelessWidget {
             child: Text(noteStr, style: style),
           ),
           _HeaderText(note.fileName, Alignment.topRight),
-          _HeaderText("Output", Alignment.topLeft),
+          _HeaderText(
+            LocaleKeys.settings_noteMetaData_output.tr(),
+            Alignment.topLeft,
+          ),
         ],
       ),
     );
@@ -236,7 +252,7 @@ class NoteOutputExample extends StatelessWidget {
 class NoteInputExample extends StatelessWidget {
   final Note note;
 
-  NoteInputExample(this.note);
+  const NoteInputExample(this.note);
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +283,10 @@ class NoteInputExample extends StatelessWidget {
               ),
             ),
             _HeaderText(note.fileName, Alignment.topRight),
-            _HeaderText("Input", Alignment.topLeft),
+            _HeaderText(
+              LocaleKeys.settings_noteMetaData_input.tr(),
+              Alignment.topLeft,
+            ),
           ],
         ),
       ),
@@ -279,7 +298,7 @@ class _HeaderText extends StatelessWidget {
   final String text;
   final Alignment alignment;
 
-  _HeaderText(this.text, this.alignment);
+  const _HeaderText(this.text, this.alignment);
 
   @override
   Widget build(BuildContext context) {
@@ -300,7 +319,7 @@ class _HeaderText extends StatelessWidget {
 class _Tag extends StatelessWidget {
   final String text;
 
-  _Tag(this.text);
+  const _Tag(this.text);
 
   @override
   Widget build(BuildContext context) {
@@ -310,8 +329,8 @@ class _Tag extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(50),
         color: theme.scaffoldBackgroundColor,
-        boxShadow: [
-          const BoxShadow(color: Colors.grey, spreadRadius: 1),
+        boxShadow: const [
+          BoxShadow(color: Colors.grey, spreadRadius: 1),
         ],
       ),
       padding: const EdgeInsets.all(8.0),
@@ -323,7 +342,7 @@ class _Tag extends StatelessWidget {
 class TagsWidget extends StatelessWidget {
   final Set<String> tags;
 
-  TagsWidget(this.tags);
+  const TagsWidget(this.tags);
 
   @override
   Widget build(BuildContext context) {
@@ -342,7 +361,7 @@ class CustomMetDataTile extends StatefulWidget {
   final String value;
   final Func1<String, void> onChange;
 
-  CustomMetDataTile({required this.value, required this.onChange});
+  const CustomMetDataTile({required this.value, required this.onChange});
 
   @override
   _CustomMetDataTileState createState() => _CustomMetDataTileState();
@@ -411,7 +430,7 @@ class _CustomMetDataTileState extends State<CustomMetDataTile> {
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(widget.value),
-          child: Text(tr("settings.cancel")),
+          child: Text(LocaleKeys.settings_cancel.tr()),
         ),
         TextButton(
           onPressed: () {
@@ -423,7 +442,7 @@ class _CustomMetDataTileState extends State<CustomMetDataTile> {
 
             return Navigator.of(context).pop(text);
           },
-          child: Text(tr("settings.ok")),
+          child: Text(LocaleKeys.settings_ok.tr()),
         ),
       ],
       content: form,

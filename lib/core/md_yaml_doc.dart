@@ -1,4 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:collection';
+
+import 'package:flutter/foundation.dart';
 
 import 'package:collection/collection.dart';
 
@@ -33,6 +41,10 @@ class MdYamlDoc {
 
   @override
   String toString() {
-    return 'MdYamlDoc{body: "$body", props: $props}';
+    if (kDebugMode) {
+      return 'MdYamlDoc{body: "$body", props: $props}';
+    } else {
+      return 'MdYamlDoc{body: "<hidden>", props: <hidden>}';
+    }
   }
 }

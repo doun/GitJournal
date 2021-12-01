@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/material.dart';
@@ -10,10 +17,10 @@ import 'package:gitjournal/core/link.dart';
 
 class LinksLoader {
   Isolate? _isolate;
-  ReceivePort _receivePort = ReceivePort();
+  final _receivePort = ReceivePort();
   SendPort? _sendPort;
 
-  var _loadingLock = Lock();
+  final _loadingLock = Lock();
 
   Future<void> _initIsolate() async {
     if (_isolate != null && _sendPort != null) return;
@@ -58,7 +65,7 @@ void _isolateMain(SendPort toMainSender) {
   ReceivePort fromMainRec = ReceivePort();
   toMainSender.send(fromMainRec.sendPort);
 
-  fromMainRec.listen((data) async {
+  var _ = fromMainRec.listen((data) async {
     assert(data is _LoadingMessage);
     var msg = data as _LoadingMessage;
 
@@ -77,7 +84,7 @@ List<Link> parseLinks(String body, String filePath) {
     inlineSyntaxes: [WikiLinkSyntax()],
   );
 
-  var lines = body.replaceAll('\r\n', '\n').split('\n');
+  var lines = LineSplitter.split(body).toList();
   var nodes = doc.parseLines(lines);
   var possibleLinks = LinkExtractor(filePath).visit(nodes);
 

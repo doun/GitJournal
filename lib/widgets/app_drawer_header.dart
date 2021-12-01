@@ -1,3 +1,11 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -7,20 +15,21 @@ import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:time/time.dart';
 
+import 'package:gitjournal/generated/locale_keys.g.dart';
 import 'package:gitjournal/repository.dart';
-import 'package:gitjournal/settings/app_settings.dart';
+import 'package:gitjournal/settings/app_config.dart';
 import 'package:gitjournal/settings/settings.dart';
 
 class AppDrawerHeader extends StatelessWidget {
   final Func0<void> repoListToggled;
 
-  AppDrawerHeader({
+  const AppDrawerHeader({
     required this.repoListToggled,
   });
 
   @override
   Widget build(BuildContext context) {
-    var appSettings = Provider.of<AppSettings>(context);
+    var appConfig = Provider.of<AppConfig>(context);
 
     var top = Row(
       children: <Widget>[
@@ -61,14 +70,15 @@ class AppDrawerHeader extends StatelessWidget {
       ),
     );
 
-    if (!appSettings.proMode) {
+    if (!appConfig.proMode) {
       return header;
     }
 
+    var isDesktop = Platform.isLinux || Platform.isWindows || Platform.isMacOS;
     return Banner(
-      message: tr('pro'),
+      message: isDesktop ? tr(LocaleKeys.beta) : tr(LocaleKeys.pro),
       location: BannerLocation.topStart,
-      color: Theme.of(context).accentColor,
+      color: Theme.of(context).colorScheme.secondary,
       child: header,
     );
   }
@@ -156,20 +166,21 @@ class __CurrentRepoState extends State<_CurrentRepo>
 
   void _pressed() {
     if (controller.isCompleted) {
-      controller.reverse(from: 1.0);
+      var _ = controller.reverse(from: 1.0);
     } else {
-      controller.forward(from: 0.0);
+      var _ = controller.forward(from: 0.0);
     }
     widget.repoListToggled();
   }
 
-  void _fetchRepoInfo() async {
+  Future<void> _fetchRepoInfo() async {
     if (_repoFolderName.isNotEmpty) {
       return;
     }
 
     var repo = context.watch<GitJournalRepo>();
-    var repoPath = await repo.settings.buildRepoPath(repo.gitBaseDirectory);
+    var repoPath =
+        await repo.storageConfig.buildRepoPath(repo.gitBaseDirectory);
     _repoFolderName = p.basename(repoPath);
 
     var remoteConfigs = await repo.remoteConfigs();
@@ -177,7 +188,7 @@ class __CurrentRepoState extends State<_CurrentRepo>
 
     if (remoteConfigs.isEmpty) {
       setState(() {
-        _gitRemoteUrl = tr("drawer.remote");
+        _gitRemoteUrl = tr(LocaleKeys.drawer_remote);
       });
       return;
     }
@@ -189,25 +200,6 @@ class __CurrentRepoState extends State<_CurrentRepo>
         _gitRemoteUrl = _gitRemoteUrl.substring(i + 1);
       }
     });
-  }
-}
-
-class ProButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    var theme = Theme.of(context);
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: theme.scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(color: theme.accentColor, spreadRadius: 0),
-        ],
-      ),
-      padding: const EdgeInsets.all(8.0),
-      child: Text('PRO', style: theme.textTheme.button),
-    );
   }
 }
 

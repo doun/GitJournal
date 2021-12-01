@@ -1,20 +1,23 @@
-import 'dart:io';
+// SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 import 'package:dart_git/git.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:time/time.dart';
+import 'package:universal_io/io.dart';
 
 import 'package:gitjournal/app.dart';
-import 'package:gitjournal/settings/app_settings.dart';
+import 'package:gitjournal/settings/app_config.dart';
 import 'package:gitjournal/utils/datetime.dart';
 
-void main() async {
+Future<void> main() async {
   // enableFlutterDriverExtension();
 
   var pref = await SharedPreferences.getInstance();
-  AppSettings.instance.load(pref);
+  AppConfig.instance.load(pref);
 
   await populateWithData(pref);
   await JournalApp.main(pref);
@@ -27,7 +30,7 @@ Future<void> populateWithData(SharedPreferences pref) async {
   var repoPath = p.join(dir.path, "journal_local");
   await GitRepository.init(repoPath);
 
-  print("Filling fake data in $repoPath");
+  stderr.writeln("Filling fake data in $repoPath");
 
   // Write Folders
   Directory(p.join(repoPath, "GitJournal")).createSync();

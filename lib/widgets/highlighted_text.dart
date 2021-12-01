@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 class HighlightedText extends StatelessWidget {
@@ -10,7 +16,8 @@ class HighlightedText extends StatelessWidget {
   final TextOverflow? overflow;
   final int? maxLines;
 
-  HighlightedText({
+  const HighlightedText({
+    Key? key,
     required this.text,
     required this.highlightText,
     required this.highlightTextLowerCase,
@@ -18,7 +25,7 @@ class HighlightedText extends StatelessWidget {
     this.highlightStyle,
     this.overflow,
     this.maxLines,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +40,7 @@ class HighlightedText extends StatelessWidget {
 
     var highlightStyle = this.highlightStyle ??
         style.copyWith(
-          backgroundColor: Theme.of(context).highlightColor,
+          backgroundColor: Theme.of(context).textSelectionTheme.selectionColor,
         );
 
     var before = text.substring(0, i);

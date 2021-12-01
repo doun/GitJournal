@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -7,6 +13,8 @@ import 'package:gitjournal/screens/home_screen.dart';
 import 'package:gitjournal/settings/settings.dart';
 
 class BottomMenuBarSettings extends StatefulWidget {
+  static const routePath = '/settings/bottom_menu_bar';
+
   @override
   _BottomMenuBarSettingsState createState() => _BottomMenuBarSettingsState();
 }
@@ -64,8 +72,8 @@ class _BottomMenuBarSettingsState extends State<BottomMenuBarSettings> {
       scale: 0.75,
       child: Container(
         padding: const EdgeInsets.all(2.0),
-        color: theme.accentColor.withAlpha(256 ~/ 10),
-        child: Container(
+        color: theme.colorScheme.secondary.withAlpha(256 ~/ 10),
+        child: SizedBox(
           width: mq.size.width,
           height: mq.size.height,
           child: IgnorePointer(child: HomeScreen()),

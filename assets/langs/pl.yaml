@@ -1,21 +1,20 @@
-# Polish translation  by Witold Firlej (grizz) https://grizz.pl https://github.com/grizz-pl
+# SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+#
+# SPDX-License-Identifier: CC-BY-4.0
 settings:
   ok: Ok
   cancel: Anuluj
   title: Opcje
   author:
     label: Imię i nazwisko
-    hint: Kto jest autorem zmian?
     validator: Podaj imię
   email:
     label: Email
-    hint: Adres email
     validator:
       empty: Proszę wpisz email
       invalid: Proszę podaj poprawny email
   display:
     title: Opcje wyświetlania
-    darkTheme: Dark Theme
     homeScreen: Ekran główny
     theme: Motyw
     images:
@@ -91,6 +90,7 @@ settings:
           'on': true
         vectorGraphics: Vector Graphics (.svg)
         vectorGraphicsAdjustColors: Colors to Adjust
+    lang: Language
   gitAuthor: Ustawienia autora dla Git
   versionInfo: Informacja o wersji
   analytics: Analityka
@@ -106,6 +106,7 @@ settings:
       info: Info
       debug: Debug
       verbose: Verbose
+    copy: Debug Logs Copied
   images:
     title: Ustawienia obrazów
     subtitle: Skonfiguruj jak przechowywane są obrazy
@@ -144,19 +145,20 @@ settings:
     customMetaData:
       title: Konfigurowalne metadane
       invalid: Błędny YAML
+    output: Output
+    input: Input
   privacy: Polityka prywatności
   terms: Reulamin
   experimental:
     title: Funkcjonalności eksperymentalne
     subtitle: Wypróbuj funkcjonalności będące w trakcie rozwoju
-    backlinks: Pokazuj linki zwrotne w podglądzie Markdown
-    fs: Pokazuj system plików
     markdownToolbar: Pokazuj pasek narzędzi Markdown w edytorze
     graphView: Widok grafu
     accounts: Platform Independent Accounts
     includeSubfolders: Include Subfolders
     experimentalGitOps: Dart-only Git implementation
     merge: Dart-only merge implementation
+    autoCompleteTags: Tags Auto Completion
   editors:
     title: opcje edytora
     subtitle: Skonfiguruj jak działają poszczególne edytory
@@ -169,6 +171,7 @@ settings:
     rawEditor: Edytor źródłowy
     choose: Wybierz edytor
     orgEditor: Org Editor
+    defaultNoteFormat: Default Note Format
   sortingField:
     modified: Ostatnia modyfikacja
     created: Data utworzenia
@@ -194,13 +197,13 @@ settings:
     listView: Widok listy
     confirmDelete: Pokazuj okno potwierdzenia kasowania pliku
     hardWrap: Enable hardWrap
+    emoji: Emojify text
   NoteFileNameFormat:
     iso8601WithTimeZone: ISO8601 ze strefą czasową
     iso8601: ISO8601
     iso8601WithoutColon: ISO8601 bez dwukropków
     title: Tytuł
     uuid: Uuid V4
-    simmple: yyyy-mm-dd-hh-mm-ss
     zettelkasten: yyyymmddhhmmss
     simple: yyyy-mm-dd-hh-mm-ss
     dateOnly: yyyy-mm-dd
@@ -229,6 +232,8 @@ settings:
     external: Przechowuj w zewnętrznym repozytorium
     icloud: Przechowuj w iCloud
     repoLocation: Lokalizacja repozytorium
+    notWritable: "{} is not writable"
+    failedExternal: Unable to get External Storage Directory
   drawer:
     title: Ustawienia paska bocznego
   bottomMenuBar:
@@ -236,6 +241,10 @@ settings:
     subtitle: Skonfiguruj jego wygląd i zachowanie
     enable: Włącz dolny pasek menu
   deleteRepo: Usuń Repozytorium
+  fileFormat:
+    markdown: Markdown
+    txt: Txt
+    orgMode: Org Mode
 editors:
   checklist:
     add: Dodaj element
@@ -254,6 +263,8 @@ editors:
     saveNoteFailed:
       title: Nie udało się zapisać notatki
       message: Przepraszamy, ale nie możemy zapisać tej notatki. Została ona skopiowana do schowka, aby uniknąć utraty danych.
+    defaultFileNameHint: File Name
+    find: Find in note
 pro: Pro
 actions:
   newNote: Nowa notatka
@@ -315,7 +326,6 @@ widgets:
     failSend: Failed to send purchase request
     failPurchase: Failed to Purchase - {}
   FolderView:
-    noteSelected: Note Selected
     syncError: Błąd synchronizacji {}
     headerOptions:
       heading: Opcje nagłówka
@@ -335,6 +345,10 @@ widgets:
     noteDeleted: Nie wykasowany
     undo: Cofnij
     searchFailed: Nie znaleziono
+    actions:
+      moveToFolder: Move To Folder
+    pinned: Pinned
+    others: Others
   imageRenderer:
     caption: "{first} - {second}"
     httpError: "Code: {status} for {url}"
@@ -372,6 +386,8 @@ drawer:
   graph: Widok grafu
   remote: Brak hosta Git
   addRepo: Dodaj repozytorium
+  login: Login
+  history: History
 setup:
   autoConfigure:
     title: Jak chcesz to zrobić?
@@ -493,7 +509,7 @@ feature_timeline:
   issues: Rozwój GitJournal jest prowadzony na Github. Rozważ głosowanie w sprawach, które uważasz za ważne.
 purchase_screen:
   title: Wersja Pro
-  desc: „GitJournal jest całkowicie open source i jest wynikiem znacznych prac rozwojowych. Nie ma wsparcia zewnętrznego kapitału ani korporacji i nigdy nie będzie miał. Twoje wsparcie bezpośrednio podtrzymuje rozwój.
+  desc: '„GitJournal jest całkowicie open source i jest wynikiem znacznych prac rozwojowych. Nie ma wsparcia zewnętrznego kapitału ani korporacji i nigdy nie będzie miał. Twoje wsparcie bezpośrednio podtrzymuje rozwój.'
   restore: Restore Purchase
   oneTime:
     title: One Time Purchase
@@ -511,4 +527,4 @@ OnBoarding:
   subtitle: 'Otwartoźródłowa aplikacja do notatek oparta o Git'
   page2: 'Twoje notatki są przechowywane w plikach markdown z nagłówkami YAML'
   page3: 'Synchronizuj swoje repozytorium git z dowolnym usługodawcą'
-0: ""
+beta: BETA

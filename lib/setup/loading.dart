@@ -1,8 +1,14 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 class GitHostSetupLoadingPage extends StatelessWidget {
   final String text;
-  GitHostSetupLoadingPage(this.text);
+  const GitHostSetupLoadingPage(this.text, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

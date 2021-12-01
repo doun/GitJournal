@@ -1,32 +1,40 @@
-import 'dart:convert';
-import 'dart:io' show Platform;
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart' as foundation;
+
+import 'package:google_api_availability/google_api_availability.dart';
 import 'package:http/http.dart' as http;
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase/store_kit_wrappers.dart';
+import 'package:universal_io/io.dart' show Platform;
 
-import 'package:gitjournal/app.dart';
 import 'package:gitjournal/error_reporting.dart';
 import 'package:gitjournal/features.dart';
-import 'package:gitjournal/settings/app_settings.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/logger/logger.dart';
+import 'package:gitjournal/settings/app_config.dart';
 
 class InAppPurchases {
   static Future<void> confirmProPurchaseBoot() async {
     clearTransactionsIos();
     confirmPendingPurchases();
 
-    if (Features.alwaysPro || !AppSettings.instance.validateProMode) {
+    if (Features.alwaysPro || !AppConfig.instance.validateProMode) {
       return;
     }
 
-    if (AppSettings.instance.proMode == false) {
+    if (AppConfig.instance.proMode == false) {
       Log.i("confirmProPurchaseBoot: Pro Mode is false");
       return;
     }
 
     var currentDt = DateTime.now().toUtc().toIso8601String();
-    var exp = AppSettings.instance.proExpirationDate;
+    var exp = AppConfig.instance.proExpirationDate;
 
     Log.i("Checking if ProMode should be enabled. Exp: $exp");
     if (exp.isNotEmpty && exp.compareTo(currentDt) > 0) {
@@ -34,7 +42,7 @@ class InAppPurchases {
       return;
     }
 
-    if (JournalApp.isInDebugMode) {
+    if (foundation.kDebugMode) {
       Log.d("Ignoring IAP pro check - debug mode");
       return;
     }
@@ -52,9 +60,9 @@ class InAppPurchases {
       Log.e("Failed to get subscription status", ex: e, stacktrace: stackTrace);
       Log.i("Disabling Pro mode as it has probably expired");
 
-      AppSettings.instance.proMode = false;
-      AppSettings.instance.proExpirationDate = "";
-      AppSettings.instance.save();
+      AppConfig.instance.proMode = false;
+      AppConfig.instance.proExpirationDate = "";
+      AppConfig.instance.save();
 
       return;
     }
@@ -65,14 +73,14 @@ class InAppPurchases {
     var expiryDate = sub.expiryDate.toIso8601String();
     Log.i("Pro ExpiryDate: $expiryDate");
 
-    if (AppSettings.instance.proMode != isPro) {
+    if (AppConfig.instance.proMode != isPro) {
       Log.i("Pro mode changed to $isPro");
-      AppSettings.instance.proMode = isPro;
-      AppSettings.instance.proExpirationDate = expiryDate;
-      AppSettings.instance.save();
+      AppConfig.instance.proMode = isPro;
+      AppConfig.instance.proExpirationDate = expiryDate;
+      AppConfig.instance.save();
     } else {
-      AppSettings.instance.proExpirationDate = expiryDate;
-      AppSettings.instance.save();
+      AppConfig.instance.proExpirationDate = expiryDate;
+      AppConfig.instance.save();
     }
   }
 
@@ -149,9 +157,16 @@ class InAppPurchases {
     }
   }
 
-  static void confirmPendingPurchases() async {
+  static Future<void> confirmPendingPurchases() async {
     // On iOS this results in a "Sign in with Apple ID" dialog
     if (!Platform.isAndroid) {
+      return;
+    }
+
+    var availability = await GoogleApiAvailability.instance
+        .checkGooglePlayServicesAvailability();
+    if (availability != GooglePlayServicesAvailability.success) {
+      Log.e("Google Play Services Not Available");
       return;
     }
 
@@ -164,7 +179,7 @@ class InAppPurchases {
         Log.i("Pending Complete Purchase - ${pd.productID}");
 
         try {
-          await iapCon.completePurchase(pd);
+          var _ = await iapCon.completePurchase(pd);
         } catch (e, stackTrace) {
           logException(e, stackTrace);
         }
@@ -184,7 +199,7 @@ Future<DateTime?> getExpiryDate(
   var body = {
     'receipt': receipt,
     "sku": sku,
-    'pseudoId': AppSettings.instance.pseudoId,
+    'pseudoId': '',
     'is_purchase': isPurchase,
   };
   Log.i("getExpiryDate ${json.encode(body)}");

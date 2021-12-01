@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -10,7 +16,7 @@ import 'package:gitjournal/editors/common_types.dart';
 class NewNoteNavBar extends StatelessWidget {
   final Func1<EditorType, void> onPressed;
 
-  NewNoteNavBar({required this.onPressed});
+  const NewNoteNavBar({required this.onPressed});
 
   @override
   Widget build(BuildContext context) {

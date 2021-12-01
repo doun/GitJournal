@@ -1,22 +1,26 @@
-import 'dart:developer';
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'package:function_types/function_types.dart';
-import 'package:org_flutter/org_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:time/time.dart';
 
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder_fs.dart';
-import 'package:gitjournal/core/org_links_handler.dart';
 import 'package:gitjournal/editors/bottom_bar.dart';
 import 'package:gitjournal/editors/common.dart';
+import 'package:gitjournal/editors/note_body_editor.dart';
 import 'package:gitjournal/settings/settings.dart';
 import 'package:gitjournal/widgets/note_viewer.dart';
 
 class EditorScaffold extends StatefulWidget {
+  final Note startingNote;
   final Editor editor;
   final EditorState editorState;
   final bool noteModified;
@@ -31,9 +35,12 @@ class EditorScaffold extends StatefulWidget {
   final bool undoAllowed;
   final bool redoAllowed;
 
+  final bool findAllowed;
+
   final Widget? extraBottomWidget;
 
-  EditorScaffold({
+  const EditorScaffold({
+    required this.startingNote,
     required this.editor,
     required this.editorState,
     required this.noteModified,
@@ -44,6 +51,7 @@ class EditorScaffold extends StatefulWidget {
     required this.onRedoSelected,
     required this.undoAllowed,
     required this.redoAllowed,
+    required this.findAllowed,
     this.extraBottomWidget,
     this.extraButton,
   });
@@ -55,13 +63,15 @@ class EditorScaffold extends StatefulWidget {
 class _EditorScaffoldState extends State<EditorScaffold> {
   var hideUIElements = false;
   var editingMode = true;
+  var findMode = false;
+
   late Note note;
 
   @override
   void initState() {
     super.initState();
 
-    note = widget.editorState.getNote();
+    note = widget.startingNote;
 
     SchedulerBinding.instance!
         .addPostFrameCallback((_) => _initStateWithContext());
@@ -129,33 +139,29 @@ class _EditorScaffoldState extends State<EditorScaffold> {
   @override
   Widget build(BuildContext context) {
     var settings = Provider.of<Settings>(context);
-    Widget body;
-    if (editingMode) {
-      body = widget.body;
-    } else {
-      switch (note.fileFormat) {
-        case NoteFileFormat.OrgMode:
-          OrgLinkHandler handler = OrgLinkHandler(context, note);
 
-          body = Org(
-            note.body,
-            onLinkTap: handler.launchUrl,
-            onLocalSectionLinkTap: (OrgSection section) {
-              log("local section link: " + section.toString());
-            },
-            onSectionLongPress: (OrgSection section) {
-              log('local section long-press: ' + section.headline.rawTitle!);
-            },
-          );
-          break;
-        default:
-          body = NoteViewer(
-            note: note,
-            parentFolder: widget.parentFolder,
-          );
-          break;
+    var responsiveBody = LayoutBuilder(builder: (context, constraints) {
+      // FIXME: This shouldn't depend on the font
+      var ch = textSize('0', NoteBodyEditor.textStyle(context));
+      var maxWidth = ch.width * 65;
+
+      var body = editingMode
+          ? widget.body
+          : NoteViewer(note: note, parentFolder: widget.parentFolder);
+
+      body = Scrollbar(child: body);
+
+      if (constraints.maxWidth <= maxWidth) {
+        return body;
       }
-    }
+
+      return Container(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Center(
+          child: SizedBox(width: maxWidth, child: body),
+        ),
+      );
+    });
 
     return Scaffold(
       body: GestureDetector(
@@ -169,19 +175,35 @@ class _EditorScaffoldState extends State<EditorScaffold> {
         },
         child: Column(
           children: <Widget>[
-            _AnimatedOpacityIgnorePointer(
-              visible: !hideUIElements,
-              child: EditorAppBar(
-                editor: widget.editor,
-                editorState: widget.editorState,
-                noteModified: widget.noteModified,
-                extraButton: widget.extraButton,
-                allowEdits: editingMode,
-                onEditingModeChange: _switchMode,
+            if (!findMode)
+              _HideWidget(
+                visible: !hideUIElements,
+                child: EditorAppBar(
+                  editor: widget.editor,
+                  editorState: widget.editorState,
+                  noteModified: widget.noteModified,
+                  extraButton: widget.extraButton,
+                  allowEdits: editingMode,
+                  onEditingModeChange: _switchMode,
+                ),
               ),
+            if (findMode)
+              _HideWidget(
+                visible: !hideUIElements,
+                child: EditorAppSearchBar(
+                  editorState: widget.editorState,
+                  onCloseSelected: () {
+                    setState(() {
+                      findMode = false;
+                    });
+                  },
+                  scrollToResult: widget.editorState.scrollToResult,
+                ),
+              ),
+            Expanded(
+              child: Hero(tag: note.filePath, child: responsiveBody),
             ),
-            Expanded(child: body),
-            _AnimatedOpacityIgnorePointer(
+            _HideWidget(
               visible: !hideUIElements,
               child: EditorBottomBar(
                 editor: widget.editor,
@@ -204,6 +226,12 @@ class _EditorScaffoldState extends State<EditorScaffold> {
                 onRedoSelected: widget.onRedoSelected,
                 undoAllowed: widget.undoAllowed,
                 redoAllowed: widget.redoAllowed,
+                findAllowed: widget.findAllowed,
+                onFindSelected: () {
+                  setState(() {
+                    findMode = true;
+                  });
+                },
               ),
             ),
             if (widget.extraBottomWidget != null) widget.extraBottomWidget!,
@@ -214,11 +242,11 @@ class _EditorScaffoldState extends State<EditorScaffold> {
   }
 }
 
-class _AnimatedOpacityIgnorePointer extends StatelessWidget {
+class _HideWidget extends StatelessWidget {
   final bool visible;
   final Widget child;
 
-  _AnimatedOpacityIgnorePointer({required this.visible, required this.child});
+  const _HideWidget({required this.visible, required this.child});
 
   @override
   Widget build(BuildContext context) {

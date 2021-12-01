@@ -1,9 +1,18 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 // GIT_SSH_COMMAND='ssh -i private_key_file -o IdentitiesOnly=yes' git clone user@host:repo.git
 
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:dart_git/utils/file_extensions.dart';
 import 'package:dart_git/utils/result.dart';
+import 'package:universal_io/io.dart';
+
+import 'package:gitjournal/logger/logger.dart';
 
 Future<Result<void>> gitFetchViaExecutable({
   required String repoPath,
@@ -48,8 +57,10 @@ Future<Result<void>> _gitCommandViaExecutable({
 
   var dir = Directory.systemTemp.createTempSync();
   var temp = File("${dir.path}/key");
-  temp.writeAsString(privateKey);
+  await temp.writeAsString(privateKey);
+  await temp.chmod(int.parse('0600', radix: 8));
 
+  Log.i("Running git $command $remoteName");
   var process = await Process.start(
     'git',
     [
@@ -60,14 +71,22 @@ Future<Result<void>> _gitCommandViaExecutable({
     environment: {
       'GIT_SSH_COMMAND': 'ssh -i ${temp.path} -o IdentitiesOnly=yes',
     },
-    mode: ProcessStartMode.inheritStdio,
   );
+
+  Log.d('env GIT_SSH_COMMAND="ssh -i ${temp.path} -o IdentitiesOnly=yes"');
+  Log.d('git $command $remoteName');
 
   var exitCode = await process.exitCode;
   await dir.delete(recursive: true);
 
+  var stdoutB = <int>[];
+  await for (var d in process.stdout) {
+    stdoutB.addAll(d);
+  }
+  var stdout = utf8.decode(stdoutB);
+
   if (exitCode != 0) {
-    var ex = Exception("Failed to fetch, exitCode: $exitCode");
+    var ex = Exception("Failed to fetch - $stdout - exitCode: $exitCode");
     return Result.fail(ex);
   }
 
@@ -89,7 +108,8 @@ Future<Result<String>> gitDefaultBranchViaExecutable({
 
   var dir = Directory.systemTemp.createTempSync();
   var temp = File("${dir.path}/key");
-  temp.writeAsString(privateKey);
+  await temp.writeAsString(privateKey);
+  await temp.chmod(int.parse('0600', radix: 8));
 
   var process = await Process.start(
     'git',
@@ -104,11 +124,14 @@ Future<Result<String>> gitDefaultBranchViaExecutable({
     },
   );
 
+  Log.d('env GIT_SSH_COMMAND="ssh -i ${temp.path} -o IdentitiesOnly=yes"');
+  Log.d('git remote show $remoteName');
+
   var exitCode = await process.exitCode;
   await dir.delete(recursive: true);
 
   if (exitCode != 0) {
-    var ex = Exception("Failed to fetch, exitCode: $exitCode");
+    var ex = Exception("Failed to fetch default branch, exitCode: $exitCode");
     return Result.fail(ex);
   }
 
@@ -120,6 +143,10 @@ Future<Result<String>> gitDefaultBranchViaExecutable({
   for (var line in LineSplitter.split(stdout)) {
     if (line.contains('HEAD branch:')) {
       var branch = line.split(':')[1].trim();
+      // Everyone seems to default to 'main' these days
+      if (branch == '(unknown)') {
+        return Result('main');
+      }
       return Result(branch);
     }
   }

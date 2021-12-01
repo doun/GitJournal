@@ -1,19 +1,9 @@
 /*
-Copyright 2020-2021 Vishesh Handa <me@vhanda.in>
-                    Roland Fredenhagen <important@van-fredenhagen.de>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * SPDX-FileCopyrightText: 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -26,13 +16,15 @@ import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:gitjournal/core/hardwrap.dart';
 import 'package:gitjournal/core/link.dart';
 import 'package:gitjournal/core/note.dart';
+import 'package:gitjournal/editors/note_body_editor.dart';
 import 'package:gitjournal/folder_views/common.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/logger/logger.dart';
+import 'package:gitjournal/markdown/hardwrap.dart';
 import 'package:gitjournal/settings/settings.dart';
 import 'package:gitjournal/utils/link_resolver.dart';
-import 'package:gitjournal/utils/logger.dart';
 import 'package:gitjournal/utils/utils.dart';
 import 'package:gitjournal/widgets/images/markdown_image.dart';
 
@@ -59,7 +51,9 @@ class MarkdownRenderer extends StatelessWidget {
     var isDark = theme.brightness == Brightness.dark;
 
     // Copied from MarkdownStyleSheet except Grey is replaced with Highlight color
+    // p is changed
     var markdownStyleSheet = MarkdownStyleSheet.fromTheme(theme).copyWith(
+      p: NoteBodyEditor.textStyle(context),
       code: theme.textTheme.bodyText2!.copyWith(
         backgroundColor: theme.dialogBackgroundColor,
         fontFamily: 'monospace',
@@ -104,7 +98,7 @@ class MarkdownRenderer extends StatelessWidget {
           if (!opened) {
             showSnackbar(
               context,
-              tr('widgets.NoteViewer.linkInvalid', args: [link]),
+              tr(LocaleKeys.widgets_NoteViewer_linkInvalid, args: [link]),
             );
           }
           return;
@@ -112,12 +106,12 @@ class MarkdownRenderer extends StatelessWidget {
 
         // External Link
         try {
-          await launch(link);
+          var _ = await launch(link);
         } catch (e, stackTrace) {
           Log.e('Opening Link', ex: e, stacktrace: stackTrace);
           showSnackbar(
             context,
-            tr('widgets.NoteViewer.linkNotFound', args: [link]),
+            tr(LocaleKeys.widgets_NoteViewer_linkNotFound, args: [link]),
           );
         }
       },

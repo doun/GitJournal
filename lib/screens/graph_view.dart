@@ -1,11 +1,22 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/core/graph.dart';
-import 'package:gitjournal/core/notes_folder_fs.dart';
+import 'package:gitjournal/core/views/note_links_view.dart';
 
 class GraphViewScreen extends StatefulWidget {
+  static const routePath = '/graph';
+
+  const GraphViewScreen({Key? key}) : super(key: key);
+
   @override
   _GraphViewScreenState createState() => _GraphViewScreenState();
 }
@@ -17,11 +28,13 @@ class _GraphViewScreenState extends State<GraphViewScreen> {
   Widget build(BuildContext context) {
     if (graph == null) {
       var rootFolder = Provider.of<NotesFolderFS>(context);
+      var linksProvider = NoteLinksProvider.of(context);
+
       setState(() {
-        graph = Graph.fromFolder(rootFolder);
+        graph = Graph.fromFolder(rootFolder, linksProvider);
         graph!.addListener(_setState);
       });
-      return Container(width: 2500, height: 2500);
+      return const SizedBox(width: 2500, height: 2500);
     }
 
     return SafeArea(child: graph != null ? GraphView(graph!) : Container());
@@ -47,7 +60,7 @@ class _GraphViewScreenState extends State<GraphViewScreen> {
 class GraphView extends StatefulWidget {
   final Graph graph;
 
-  GraphView(this.graph);
+  const GraphView(this.graph);
 
   @override
   _GraphViewState createState() => _GraphViewState();
@@ -186,7 +199,7 @@ class NodeWidget extends StatelessWidget {
   final Node node;
   final double size;
 
-  NodeWidget(this.node, this.size);
+  const NodeWidget(this.node, this.size);
 
   @override
   Widget build(BuildContext context) {

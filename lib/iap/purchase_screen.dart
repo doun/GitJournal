@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -5,16 +11,17 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import 'package:gitjournal/analytics/analytics.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
 import 'package:gitjournal/iap/purchase_manager.dart';
 import 'package:gitjournal/iap/purchase_widget.dart';
+import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/screens/feature_timeline_screen.dart';
-import 'package:gitjournal/utils/logger.dart';
 import 'package:gitjournal/widgets/scroll_view_without_animation.dart';
 
 Set<String> _generateMonthlySkus() {
   var list = <String>{};
   for (var i = 0; i <= 25; i++) {
-    list.add("sku_monthly_min$i");
+    var _ = list.add("sku_monthly_min$i");
   }
   return list;
 }
@@ -22,12 +29,14 @@ Set<String> _generateMonthlySkus() {
 Set<String> _generateYearlySkus() {
   var list = <String>{};
   for (var i = 0; i <= 20; i++) {
-    list.add("sku_yearly_$i");
+    var _ = list.add("sku_yearly_$i");
   }
   return list;
 }
 
 class PurchaseScreen extends StatefulWidget {
+  static const routePath = '/purchase';
+
   @override
   _PurchaseScreenState createState() => _PurchaseScreenState();
 }
@@ -41,7 +50,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     super.initState();
   }
 
-  void _fillMinYearPurchase() async {
+  Future<void> _fillMinYearPurchase() async {
     var pm = await PurchaseManager.init();
     if (pm == null) return;
 
@@ -65,7 +74,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     return WillPopScope(
       child: Scaffold(
         appBar: AppBar(
-          title: Text(tr('purchase_screen.title')),
+          title: Text(tr(LocaleKeys.purchase_screen_title)),
         ),
         body: buildBody(context),
       ),
@@ -79,7 +88,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
           child: Text(
-            tr('purchase_screen.desc'),
+            tr(LocaleKeys.purchase_screen_desc),
             style: Theme.of(context).textTheme.bodyText2,
           ),
         ),
@@ -98,18 +107,18 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
           padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0),
           child: Wrap(
             children: [
-              RestorePurchaseButton(),
+              const RestorePurchaseButton(),
               OutlinedButton(
                 child: Text(
-                  tr("feature_timeline.title"),
+                  tr(LocaleKeys.feature_timeline_title),
                   style: Theme.of(context).textTheme.bodyText2,
                 ),
                 onPressed: () {
                   var route = MaterialPageRoute(
-                    builder: (context) => FeatureTimelineScreen(),
+                    builder: (context) => const FeatureTimelineScreen(),
                     settings: const RouteSettings(name: '/featureTimeline'),
                   );
-                  Navigator.of(context).push(route);
+                  var _ = Navigator.push(context, route);
                 },
               ),
             ],
@@ -154,7 +163,7 @@ class MonthlyRentalWidget extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            tr('purchase_screen.monthly.title'),
+            tr(LocaleKeys.purchase_screen_monthly_title),
             style: textTheme.headline5,
             textAlign: TextAlign.center,
           ),
@@ -167,7 +176,7 @@ class MonthlyRentalWidget extends StatelessWidget {
           ),
           const SizedBox(height: 32.0),
           Text(tr(
-            "purchase_screen.monthly.desc",
+            LocaleKeys.purchase_screen_monthly_desc,
             namedArgs: {'minYearlyPurchase': minYearlyPurchase},
           )),
         ],
@@ -190,7 +199,7 @@ class YearlyPurchaseWidget extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            tr('purchase_screen.oneTime.title'),
+            tr(LocaleKeys.purchase_screen_oneTime_title),
             style: textTheme.headline5,
             textAlign: TextAlign.center,
           ),
@@ -201,7 +210,7 @@ class YearlyPurchaseWidget extends StatelessWidget {
             isSubscription: false,
           ),
           const SizedBox(height: 32.0),
-          Text(tr('purchase_screen.oneTime.desc')),
+          Text(tr(LocaleKeys.purchase_screen_oneTime_desc)),
         ],
         mainAxisAlignment: MainAxisAlignment.start,
       ),
@@ -212,13 +221,13 @@ class YearlyPurchaseWidget extends StatelessWidget {
 class PurchaseCard extends StatelessWidget {
   final Widget child;
 
-  PurchaseCard({required this.child});
+  const PurchaseCard({required this.child});
 
   @override
   Widget build(BuildContext context) {
     var mediaQuery = MediaQuery.of(context);
 
-    return Container(
+    return SizedBox(
       width: mediaQuery.size.width * 0.80,
       child: Card(
         shape: RoundedRectangleBorder(
@@ -236,7 +245,7 @@ class PurchaseCard extends StatelessWidget {
 class PurchaseCards extends StatelessWidget {
   final List<Widget> children;
 
-  PurchaseCards({required this.children});
+  const PurchaseCards({required this.children});
 
   @override
   Widget build(BuildContext context) {

@@ -1,18 +1,9 @@
 /*
-Copyright 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * SPDX-FileCopyrightText: 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'dart:ui';
 
@@ -21,19 +12,20 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gitjournal/settings/settings.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/settings/markdown_renderer_config.dart';
 import 'package:gitjournal/utils/hero_dialog.dart';
 
 class ImageCaption extends StatelessWidget {
   final String altText;
   final String tooltip;
   final bool overlay;
-  ImageCaption(this.altText, this.tooltip, this.overlay);
+  const ImageCaption(this.altText, this.tooltip, this.overlay);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final settings = Provider.of<Settings>(context);
+    final settings = Provider.of<MarkdownRendererConfig>(context);
 
     final text = captionText(context, altText, tooltip);
 
@@ -85,16 +77,20 @@ class ImageCaption extends StatelessWidget {
           padding: const EdgeInsets.all(margin),
           child: GestureDetector(
             onTap: () {
-              Navigator.push(context, HeroDialogRoute(builder: (context) {
-                return Dialog(
+              var _ = Navigator.push(
+                context,
+                HeroDialogRoute(builder: (context) {
+                  return Dialog(
                     backgroundColor: Colors.transparent,
                     child: GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
                       },
                       child: caption,
-                    ));
-              }));
+                    ),
+                  );
+                }),
+              );
             },
             child: caption,
           ),
@@ -116,7 +112,7 @@ bool shouldCaption(BuildContext context, String altText, String tooltip) {
 }
 
 String captionText(BuildContext context, String altText, String tooltip) {
-  final settings = Provider.of<Settings>(context);
+  final settings = Provider.of<MarkdownRendererConfig>(context);
 
   bool altTextCaption =
       settings.useAsCaption == SettingsImageTextType.AltTool ||
@@ -140,7 +136,7 @@ String captionText(BuildContext context, String altText, String tooltip) {
   String _tooltip = tooltipCaption ? _cleanCaption(context, tooltip) : "";
   String text = "";
   if (_altText.isNotEmpty && _tooltip.isNotEmpty) {
-    text = tr("widgets.imageRenderer.caption",
+    text = tr(LocaleKeys.widgets_imageRenderer_caption,
         namedArgs: settings.tooltipFirst
             ? {"first": _tooltip, "second": _altText}
             : {"first": _altText, "second": _tooltip});
@@ -152,7 +148,7 @@ String captionText(BuildContext context, String altText, String tooltip) {
 }
 
 String _cleanCaption(BuildContext context, String caption) {
-  final settings = Provider.of<Settings>(context);
+  final settings = Provider.of<MarkdownRendererConfig>(context);
   final tags = [
     ...settings.doThemeTags,
     ...settings.doNotThemeTags,
@@ -171,7 +167,7 @@ String _cleanCaption(BuildContext context, String caption) {
 }
 
 Color _overlayBackgroundColor(context) {
-  final settings = Provider.of<Settings>(context);
+  final settings = Provider.of<MarkdownRendererConfig>(context);
   final theme = Theme.of(context);
   return settings.transparentCaption
       ? (theme.brightness == Brightness.dark ? Colors.black : Colors.white)

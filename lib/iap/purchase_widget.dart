@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -8,11 +14,13 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'package:gitjournal/analytics/analytics.dart';
 import 'package:gitjournal/error_reporting.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
 import 'package:gitjournal/iap/iap.dart';
 import 'package:gitjournal/iap/purchase_manager.dart';
 import 'package:gitjournal/iap/purchase_slider.dart';
-import 'package:gitjournal/settings/app_settings.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/iap/purchase_thankyou_screen.dart';
+import 'package:gitjournal/logger/logger.dart';
+import 'package:gitjournal/settings/app_config.dart';
 
 class PurchaseButton extends StatelessWidget {
   final ProductDetails? product;
@@ -21,26 +29,27 @@ class PurchaseButton extends StatelessWidget {
   final Func1<bool, void> purchaseStarted;
   final PurchaseCallback purchaseCompleted;
 
-  PurchaseButton(
+  const PurchaseButton(
     this.product,
     this.timePeriod, {
+    Key? key,
     required this.subscription,
     required this.purchaseStarted,
     required this.purchaseCompleted,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     String text;
     if (product != null) {
-      text = tr("widgets.PurchaseButton.text", namedArgs: {
+      text = tr(LocaleKeys.widgets_PurchaseButton_text, namedArgs: {
         'price': product!.price,
       });
       if (subscription) {
         text += '/ $timePeriod';
       }
     } else {
-      text = tr("widgets.PurchaseButton.fail");
+      text = tr(LocaleKeys.widgets_PurchaseButton_fail);
     }
 
     return Padding(
@@ -75,7 +84,7 @@ class PurchaseButton extends StatelessWidget {
     */
   }
 
-  void _reportExceptions(BuildContext context) async {
+  Future<void> _reportExceptions(BuildContext context) async {
     try {
       await _initPurchase(context);
     } catch (err, stackTrace) {
@@ -85,8 +94,10 @@ class PurchaseButton extends StatelessWidget {
         "widgets.PurchaseButton.failPurchase",
         args: [err.toString()],
       );
-      var dialog = PurchaseFailedDialog(errStr);
-      await showDialog(context: context, builder: (context) => dialog);
+      var _ = await showDialog(
+        context: context,
+        builder: (context) => PurchaseFailedDialog(errStr),
+      );
     }
   }
 }
@@ -97,12 +108,13 @@ class PurchaseWidget extends StatefulWidget {
   final String timePeriod;
   final bool isSubscription;
 
-  PurchaseWidget({
+  const PurchaseWidget({
+    Key? key,
     required this.skus,
     required this.defaultSku,
     this.timePeriod = "",
     required this.isSubscription,
-  });
+  }) : super(key: key);
 
   @override
   _PurchaseWidgetState createState() => _PurchaseWidgetState();
@@ -266,7 +278,8 @@ class _PurchaseWidgetState extends State<PurchaseWidget> {
     if (err.isEmpty) {
       Log.i("Purchase Completed: $subStatus");
       logEvent(Event.PurchaseScreenThankYou);
-      Navigator.of(context).popAndPushNamed('/purchase_thank_you');
+      var _ = Navigator.of(context)
+          .popAndPushNamed(PurchaseThankYouScreen.routePath);
       return;
     }
 
@@ -277,8 +290,10 @@ class _PurchaseWidgetState extends State<PurchaseWidget> {
       Log.e(err);
       return;
     }
-    var dialog = PurchaseFailedDialog(err);
-    showDialog(context: context, builder: (context) => dialog);
+    var _ = showDialog(
+      context: context,
+      builder: (context) => PurchaseFailedDialog(err),
+    );
   }
 }
 
@@ -286,7 +301,7 @@ class _PurchaseSliderButton extends StatelessWidget {
   final Widget icon;
   final void Function() onPressed;
 
-  _PurchaseSliderButton({required this.icon, required this.onPressed});
+  const _PurchaseSliderButton({required this.icon, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -302,16 +317,16 @@ class _PurchaseSliderButton extends StatelessWidget {
 class PurchaseFailedDialog extends StatelessWidget {
   final String text;
 
-  PurchaseFailedDialog(this.text);
+  const PurchaseFailedDialog(this.text, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(tr('widgets.PurchaseWidget.failed')),
+      title: Text(tr(LocaleKeys.widgets_PurchaseWidget_failed)),
       content: Text(text),
       actions: <Widget>[
         TextButton(
-          child: Text(tr('settings.ok')),
+          child: Text(tr(LocaleKeys.settings_ok)),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],
@@ -320,6 +335,8 @@ class PurchaseFailedDialog extends StatelessWidget {
 }
 
 class RestorePurchaseButton extends StatefulWidget {
+  const RestorePurchaseButton({Key? key}) : super(key: key);
+
   @override
   _RestorePurchaseButtonState createState() => _RestorePurchaseButtonState();
 }
@@ -329,7 +346,7 @@ class _RestorePurchaseButtonState extends State<RestorePurchaseButton> {
 
   @override
   Widget build(BuildContext context) {
-    var text = computing ? '...' : tr('purchase_screen.restore');
+    var text = computing ? '...' : tr(LocaleKeys.purchase_screen_restore);
 
     return OutlinedButton(
       child: Text(
@@ -342,7 +359,7 @@ class _RestorePurchaseButtonState extends State<RestorePurchaseButton> {
         });
         Log.i("Restoring Purchases");
         await InAppPurchases.confirmProPurchase();
-        if (AppSettings.instance.proMode) {
+        if (AppConfig.instance.proMode) {
           Navigator.of(context).pop();
         }
       },

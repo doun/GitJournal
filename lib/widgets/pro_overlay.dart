@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -5,7 +11,8 @@ import 'package:provider/provider.dart';
 
 import 'package:gitjournal/analytics/analytics.dart';
 import 'package:gitjournal/features.dart';
-import 'package:gitjournal/settings/app_settings.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/settings/app_config.dart';
 
 class ProOverlay extends StatelessWidget {
   final Widget child;
@@ -17,22 +24,22 @@ class ProOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var appSettings = Provider.of<AppSettings>(context);
+    var appConfig = Provider.of<AppConfig>(context);
 
-    if (appSettings.proMode) {
+    if (appConfig.proMode) {
       return child;
     }
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       child: Banner(
-        message: tr('pro'),
+        message: tr(LocaleKeys.pro),
         location: BannerLocation.topEnd,
-        color: Theme.of(context).accentColor,
+        color: Theme.of(context).disabledColor,
         child: IgnorePointer(child: Opacity(opacity: 0.5, child: child)),
       ),
       onTap: () {
-        Navigator.pushNamed(context, "/purchase");
+        var _ = Navigator.pushNamed(context, "/purchase");
 
         logEvent(
           Event.PurchaseScreenOpen,

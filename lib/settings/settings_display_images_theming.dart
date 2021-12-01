@@ -1,27 +1,20 @@
 /*
-Copyright 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * SPDX-FileCopyrightText: 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/settings/markdown_renderer_config.dart';
 import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/settings/settings_screen.dart';
-import 'package:gitjournal/settings/settings_widgets.dart';
+import 'package:gitjournal/settings/widgets/settings_header.dart';
+import 'package:gitjournal/settings/widgets/settings_list_preference.dart';
 
 class SettingsDisplayImagesThemingScreen extends StatefulWidget {
   @override
@@ -36,30 +29,33 @@ class SettingsDisplayImagesThemingScreenState
 
   @override
   Widget build(BuildContext context) {
-    var settings = Provider.of<Settings>(context);
+    var settings = Provider.of<MarkdownRendererConfig>(context);
 
-    var saveDoNotThemeTag = (String? doNotThemeTags) {
+    void saveDoNotThemeTag(String? doNotThemeTags) {
       settings.doNotThemeTags = parseTags(doNotThemeTags!);
       settings.save();
-    };
+    }
+
     var doNotThemeTagsForm = Form(
       child: TextFormField(
         key: doNotThemeTagsKey,
         style: Theme.of(context).textTheme.headline6,
         decoration: InputDecoration(
-          hintText: tr('settings.display.images.theming.doNotThemeTags.hint'),
-          labelText: tr('settings.display.images.theming.doNotThemeTags.label'),
+          hintText:
+              tr(LocaleKeys.settings_display_images_theming_doThemeTags_hint),
+          labelText:
+              tr(LocaleKeys.settings_display_images_theming_doThemeTags_label),
         ),
         validator: (String? value) {
           value = value!.trim();
           if (parseTags(value).isEmpty) {
-            return tr(
-                'settings.display.images.theming.doNotThemeTags.validator.empty');
+            return tr(LocaleKeys
+                .settings_display_images_theming_doThemeTags_validator_empty);
           }
 
           if (parseTags(value).intersection(settings.doThemeTags).isNotEmpty) {
-            return tr(
-                'settings.display.images.theming.doNotThemeTags.validator.same');
+            return tr(LocaleKeys
+                .settings_display_images_theming_doThemeTags_validator_same);
           }
 
           return null;
@@ -75,29 +71,32 @@ class SettingsDisplayImagesThemingScreenState
       },
     );
 
-    var saveDoThemeTag = (String? doThemeTags) {
+    void saveDoThemeTag(String? doThemeTags) {
       settings.doThemeTags = parseTags(doThemeTags!);
       settings.save();
-    };
+    }
+
     var doThemeTagsForm = Form(
       child: TextFormField(
         key: doThemeTagsKey,
         style: Theme.of(context).textTheme.headline6,
         decoration: InputDecoration(
-          hintText: tr('settings.display.images.theming.doThemeTags.hint'),
-          labelText: tr('settings.display.images.theming.doThemeTags.label'),
+          hintText:
+              tr(LocaleKeys.settings_display_images_theming_doThemeTags_hint),
+          labelText:
+              tr(LocaleKeys.settings_display_images_theming_doThemeTags_label),
         ),
         validator: (String? value) {
           if (parseTags(value!).isEmpty) {
-            return tr(
-                'settings.display.images.theming.doThemeTags.validator.empty');
+            return tr(LocaleKeys
+                .settings_display_images_theming_doThemeTags_validator_empty);
           }
 
           if (parseTags(value)
               .intersection(settings.doNotThemeTags)
               .isNotEmpty) {
-            return tr(
-                'settings.display.images.theming.doThemeTags.validator.same');
+            return tr(LocaleKeys
+                .settings_display_images_theming_doThemeTags_validator_same);
           }
 
           return null;
@@ -196,7 +195,7 @@ class SettingsDisplayImagesThemingScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(tr('settings.display.images.theming.title')),
+        title: Text(tr(LocaleKeys.settings_display_images_theming_title)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

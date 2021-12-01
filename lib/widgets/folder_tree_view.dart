@@ -1,28 +1,37 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
-import 'package:gitjournal/core/notes_folder_fs.dart';
+import 'package:function_types/function_types.dart';
 
-typedef void FolderSelectedCallback(NotesFolderFS folder);
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
+
+typedef FolderSelectedCallback = void Function(NotesFolderFS folder);
 
 class FolderTreeView extends StatefulWidget {
   final NotesFolderFS rootFolder;
 
   final FolderSelectedCallback onFolderSelected;
-  final Function onFolderUnselected;
+  final Func0<void> onFolderUnselected;
   final FolderSelectedCallback onFolderEntered;
 
-  FolderTreeView({
+  const FolderTreeView({
     Key? key,
     required this.rootFolder,
     required this.onFolderEntered,
     this.onFolderSelected = _doNothing,
-    this.onFolderUnselected = _doNothing,
+    this.onFolderUnselected = _doNothing2,
   }) : super(key: key);
 
   @override
   FolderTreeViewState createState() => FolderTreeViewState();
 
   static void _doNothing(NotesFolderFS f) {}
+  static void _doNothing2() {}
 }
 
 class FolderTreeViewState extends State<FolderTreeView> {
@@ -73,7 +82,7 @@ class FolderTile extends StatefulWidget {
   final FolderSelectedCallback onLongPress;
   final NotesFolderFS? selectedFolder;
 
-  FolderTile({
+  const FolderTile({
     required this.folder,
     required this.onTap,
     required this.onLongPress,
@@ -125,7 +134,6 @@ class FolderTileState extends State<FolderTile> {
 
     var publicName = folder.publicName;
     if (folder.parent != null) {
-      publicName = publicName.substring(folder.parent!.pathSpec().length);
       if (publicName.startsWith('/')) {
         publicName = publicName.substring(1);
       }
@@ -141,7 +149,7 @@ class FolderTileState extends State<FolderTile> {
           child: Icon(
             Icons.folder,
             size: 36,
-            color: Theme.of(context).accentColor,
+            color: Theme.of(context).colorScheme.secondary,
           ),
         ),
         title: Text(publicName),
@@ -163,14 +171,14 @@ class FolderTileState extends State<FolderTile> {
     if (!_isExpanded) return Container();
 
     var children = <FolderTile>[];
-    widget.folder.subFolders.forEach((folder) {
+    for (var folder in widget.folder.subFolders) {
       children.add(FolderTile(
         folder: folder as NotesFolderFS,
         onTap: widget.onTap,
         onLongPress: widget.onLongPress,
         selectedFolder: widget.selectedFolder,
       ));
-    });
+    }
 
     return Container(
       margin: const EdgeInsets.only(left: 16.0),

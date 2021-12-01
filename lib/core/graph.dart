@@ -1,10 +1,17 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import 'package:gitjournal/core/folder/notes_folder.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder.dart';
+import 'package:gitjournal/core/views/note_links_view.dart';
 import 'package:gitjournal/utils/link_resolver.dart';
 
 class Node {
@@ -22,7 +29,7 @@ class Node {
   Node(this.note);
 
   String? get label {
-    _label ??= note.pathSpec();
+    _label ??= note.filePath;
     return _label;
   }
 
@@ -41,14 +48,15 @@ class Graph extends ChangeNotifier {
   List<Node> nodes = [];
   List<Edge> edges = [];
 
-  Map<String?, Set<int?>> _neighbours = {};
+  final Map<String?, Set<int?>> _neighbours = {};
   Map<String?, int>? _nodeIndexes;
 
   late GraphNodeLayout initLayouter;
+  final NoteLinksView linksView;
 
   final double nodeSize = 50.0;
 
-  Graph.fromFolder(NotesFolder folder) {
+  Graph.fromFolder(NotesFolder folder, this.linksView) {
     initLayouter = GraphNodeLayout(maxHeight: 2000, maxWidth: 2000);
 
     // print("Building graph .... ");
@@ -75,7 +83,7 @@ class Graph extends ChangeNotifier {
   Future<void> _addNote(Note note) async {
     var node = _getNode(note);
 
-    var links = await node.note.fetchLinks();
+    var links = await linksView.fetchLinks(note);
     var linkResolver = LinkResolver(note);
     for (var l in links) {
       var noteB = linkResolver.resolveLink(l);
@@ -125,12 +133,12 @@ class Graph extends ChangeNotifier {
     var nodes = <int?>{};
     for (var edge in edges) {
       if (edge.a.label == n.label) {
-        nodes.add(_nodeIndexes![edge.b.label]);
+        var _ = nodes.add(_nodeIndexes![edge.b.label]);
         continue;
       }
 
       if (edge.b.label == n.label) {
-        nodes.add(_nodeIndexes![edge.a.label]);
+        var _ = nodes.add(_nodeIndexes![edge.a.label]);
         continue;
       }
     }
@@ -155,7 +163,7 @@ class Graph extends ChangeNotifier {
       var dist = sqrt((dx * dx) + (dy * dy));
       if (dist <= 60) {
         // print('${node.label} and ${n.label} are too close - $dist');
-        _nodes.add(i);
+        var _ = _nodes.add(i);
       }
     }
 

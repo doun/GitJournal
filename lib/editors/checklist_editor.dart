@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -7,44 +13,33 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:time/time.dart';
 
 import 'package:gitjournal/core/checklist.dart';
+import 'package:gitjournal/core/image.dart' as core;
 import 'package:gitjournal/core/note.dart';
 import 'package:gitjournal/editors/common.dart';
-import 'package:gitjournal/editors/disposable_change_notifier.dart';
 import 'package:gitjournal/editors/note_title_editor.dart';
+import 'package:gitjournal/editors/utils/disposable_change_notifier.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'controllers/rich_text_controller.dart';
 
 class ChecklistEditor extends StatefulWidget implements Editor {
   final Note note;
   final bool noteModified;
 
   @override
-  final NoteCallback noteDeletionSelected;
-  @override
-  final NoteCallback noteEditorChooserSelected;
-  @override
-  final NoteCallback exitEditorSelected;
-  @override
-  final NoteCallback renameNoteSelected;
-  @override
-  final NoteCallback editTagsSelected;
-  @override
-  final NoteCallback moveNoteToFolderSelected;
-  @override
-  final NoteCallback discardChangesSelected;
+  final EditorCommon common;
 
   final bool editMode;
+  final String? highlightString;
+  final ThemeData theme;
 
-  ChecklistEditor({
+  const ChecklistEditor({
     Key? key,
     required this.note,
     required this.noteModified,
-    required this.noteDeletionSelected,
-    required this.noteEditorChooserSelected,
-    required this.exitEditorSelected,
-    required this.renameNoteSelected,
-    required this.editTagsSelected,
-    required this.moveNoteToFolderSelected,
-    required this.discardChangesSelected,
     required this.editMode,
+    required this.highlightString,
+    required this.theme,
+    required this.common,
   }) : super(key: key);
 
   @override
@@ -60,7 +55,7 @@ class ChecklistEditorState extends State<ChecklistEditor>
   var focusNodes = <UniqueKey, FocusScopeNode>{};
   var keys = <UniqueKey, ChecklistItem>{};
 
-  var _titleTextController = TextEditingController();
+  late TextEditingController _titleTextController;
   late bool _noteModified;
 
   @override
@@ -71,7 +66,11 @@ class ChecklistEditorState extends State<ChecklistEditor>
 
   void _init() {
     var note = widget.note;
-    _titleTextController = TextEditingController(text: note.title);
+    _titleTextController = buildController(
+      text: note.title,
+      highlightText: widget.highlightString,
+      theme: widget.theme,
+    );
     checklist = Checklist(note);
 
     _noteModified = widget.noteModified;
@@ -178,6 +177,7 @@ class ChecklistEditorState extends State<ChecklistEditor>
     );
 
     return EditorScaffold(
+      startingNote: widget.note,
       editor: widget,
       editorState: this,
       noteModified: _noteModified,
@@ -193,6 +193,7 @@ class ChecklistEditorState extends State<ChecklistEditor>
       onRedoSelected: _redo,
       undoAllowed: false,
       redoAllowed: false,
+      findAllowed: false,
     );
   }
 
@@ -202,15 +203,17 @@ class ChecklistEditorState extends State<ChecklistEditor>
     while (checklist.items.isNotEmpty) {
       var last = checklist.items.last;
       if (last.checked == false && last.text.trim().isEmpty) {
-        checklist.removeAt(checklist.items.length - 1);
+        var _ = checklist.removeAt(checklist.items.length - 1);
       } else {
         break;
       }
     }
 
     var note = checklist.note;
-    note.title = _titleTextController.text.trim();
-    note.type = NoteType.Checklist;
+    note.apply(
+      title: _titleTextController.text.trim(),
+      type: NoteType.Checklist,
+    );
     return note;
   }
 
@@ -249,18 +252,17 @@ class ChecklistEditorState extends State<ChecklistEditor>
           if (index >= checklist.items.length - 1) {
             nextIndex = index - 1;
           }
-          print("Next focus index $nextIndex");
 
           FocusNode? fn;
           if (nextIndex >= 0) {
             var nextItemForFocus = checklist.items[nextIndex];
             fn = _getFn(nextItemForFocus);
-            print("Giving focus to $nextItemForFocus");
           }
 
           var k = _getKey(item);
-          focusNodes.remove(k);
-          keys.remove(k);
+          dynamic _;
+          _ = focusNodes.remove(k);
+          _ = keys.remove(k);
           checklist.removeItem(item);
 
           // FIXME: Make this happen on the next build
@@ -281,19 +283,21 @@ class ChecklistEditorState extends State<ChecklistEditor>
 
           // FIXME: Make this happen on the next build
           Timer(50.milliseconds, () {
-            print("Asking focus to ${index + 1}");
             FocusScope.of(context).requestFocus();
             FocusScope.of(context).requestFocus(fn);
           });
         });
       },
+      theme: widget.theme,
+      highlightString: widget.highlightString,
     );
   }
 
   @override
   Future<void> addImage(String filePath) async {
     var note = getNote();
-    await note.addImage(filePath);
+    var image = await core.Image.copyIntoFs(note.parent, filePath);
+    note.apply(body: note.body + image.toMarkup(note.fileFormat));
 
     setState(() {
       checklist = Checklist(note);
@@ -307,6 +311,16 @@ class ChecklistEditorState extends State<ChecklistEditor>
   Future<void> _undo() async {}
 
   Future<void> _redo() async {}
+
+  @override
+  SearchInfo search(String? text) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void scrollToResult(String text, int num) {
+    throw UnimplementedError();
+  }
 }
 
 typedef TextChangedFunction = void Function(String);
@@ -321,7 +335,10 @@ class ChecklistItemTile extends StatefulWidget {
   final FocusNode focusNode;
   final bool autofocus;
 
-  ChecklistItemTile({
+  final String? highlightString;
+  final ThemeData theme;
+
+  const ChecklistItemTile({
     Key? key,
     required this.item,
     required this.statusChanged,
@@ -330,6 +347,8 @@ class ChecklistItemTile extends StatefulWidget {
     required this.itemFinished,
     required this.focusNode,
     this.autofocus = false,
+    required this.highlightString,
+    required this.theme,
   }) : super(key: key);
 
   @override
@@ -337,21 +356,25 @@ class ChecklistItemTile extends StatefulWidget {
 }
 
 class _ChecklistItemTileState extends State<ChecklistItemTile> {
-  TextEditingController? _textController;
+  late TextEditingController _textController;
 
   @override
   void initState() {
     super.initState();
-    _textController = TextEditingController(text: widget.item.text);
-    _textController!.addListener(() {
-      widget.textChanged(_textController!.value.text);
+    _textController = buildController(
+      text: widget.item.text,
+      highlightText: widget.highlightString,
+      theme: widget.theme,
+    );
+    _textController.addListener(() {
+      widget.textChanged(_textController.value.text);
     });
     widget.focusNode.addListener(_onFocus);
   }
 
   @override
   void dispose() {
-    _textController!.dispose();
+    _textController.dispose();
     widget.focusNode.removeListener(_onFocus);
 
     super.dispose();
@@ -391,10 +414,10 @@ class _ChecklistItemTileState extends State<ChecklistItemTile> {
       dense: true,
       leading: Row(
         children: <Widget>[
-          Container(
+          const SizedBox(
             height: 24.0,
             width: 24.0,
-            child: const Icon(Icons.drag_handle),
+            child: Icon(Icons.drag_handle),
           ),
           const SizedBox(width: 8.0),
           SizedBox(
@@ -421,7 +444,7 @@ class _ChecklistItemTileState extends State<ChecklistItemTile> {
 class AddItemButton extends StatelessWidget {
   final void Function() onPressed;
 
-  AddItemButton({Key? key, required this.onPressed}) : super(key: key);
+  const AddItemButton({Key? key, required this.onPressed}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -431,7 +454,7 @@ class AddItemButton extends StatelessWidget {
       dense: true,
       leading: Row(
         children: <Widget>[
-          Container(height: 24.0, width: 24.0),
+          const SizedBox(height: 24.0, width: 24.0),
           const SizedBox(width: 8.0),
           Container(
             padding: const EdgeInsets.all(0.0),
@@ -445,7 +468,7 @@ class AddItemButton extends StatelessWidget {
         ],
         mainAxisSize: MainAxisSize.min,
       ),
-      title: Text(tr("editors.checklist.add"), style: style),
+      title: Text(tr(LocaleKeys.editors_checklist_add), style: style),
     );
 
     return GestureDetector(

@@ -1,12 +1,22 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/settings/settings_screen.dart';
+import 'package:gitjournal/core/folder/notes_folder_config.dart';
+import 'package:gitjournal/settings/widgets/settings_header.dart';
 
 class SettingsTagsScreen extends StatefulWidget {
+  static const routePath = '/settings/tags';
+
+  const SettingsTagsScreen({Key? key}) : super(key: key);
+
   @override
   SettingsTagsScreenState createState() => SettingsTagsScreenState();
 }
@@ -14,49 +24,49 @@ class SettingsTagsScreen extends StatefulWidget {
 class SettingsTagsScreenState extends State<SettingsTagsScreen> {
   @override
   Widget build(BuildContext context) {
-    var settings = Provider.of<Settings>(context);
+    var folderConfig = Provider.of<NotesFolderConfig>(context);
 
     var body = ListView(children: <Widget>[
       SettingsHeader(tr("settings.tags.prefixes")),
       SwitchListTile(
         title: const Text('#'),
-        value: settings.inlineTagPrefixes.contains('#'),
+        value: folderConfig.inlineTagPrefixes.contains('#'),
         onChanged: (bool newVal) {
           setState(() {
             if (newVal) {
-              settings.inlineTagPrefixes.add('#');
+              var _ = folderConfig.inlineTagPrefixes.add('#');
             } else {
-              settings.inlineTagPrefixes.remove('#');
+              var _ = folderConfig.inlineTagPrefixes.remove('#');
             }
-            settings.save();
+            folderConfig.save();
           });
         },
       ),
       SwitchListTile(
         title: const Text('@'),
-        value: settings.inlineTagPrefixes.contains('@'),
+        value: folderConfig.inlineTagPrefixes.contains('@'),
         onChanged: (bool newVal) {
           setState(() {
             if (newVal) {
-              settings.inlineTagPrefixes.add('@');
+              var _ = folderConfig.inlineTagPrefixes.add('@');
             } else {
-              settings.inlineTagPrefixes.remove('@');
+              var _ = folderConfig.inlineTagPrefixes.remove('@');
             }
-            settings.save();
+            folderConfig.save();
           });
         },
       ),
       SwitchListTile(
         title: const Text('+'),
-        value: settings.inlineTagPrefixes.contains('+'),
+        value: folderConfig.inlineTagPrefixes.contains('+'),
         onChanged: (bool newVal) {
           setState(() {
             if (newVal) {
-              settings.inlineTagPrefixes.add('+');
+              var _ = folderConfig.inlineTagPrefixes.add('+');
             } else {
-              settings.inlineTagPrefixes.remove('+');
+              var _ = folderConfig.inlineTagPrefixes.remove('+');
             }
-            settings.save();
+            folderConfig.save();
           });
         },
       ),

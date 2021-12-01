@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -34,7 +40,7 @@ class NoteTile extends StatelessWidget {
     }
 
     if (selected) {
-      borderColor = theme.accentColor;
+      borderColor = theme.colorScheme.secondary;
     }
 
     var tileContent = Container(
@@ -71,7 +77,16 @@ class NoteTile extends StatelessWidget {
       borderRadius: borderRadius,
       type: MaterialType.card,
       child: InkWell(
-        child: tileContent,
+        child: Hero(
+          tag: note.filePath,
+          child: tileContent,
+          flightShuttleBuilder: (BuildContext flightContext,
+                  Animation<double> animation,
+                  HeroFlightDirection flightDirection,
+                  BuildContext fromHeroContext,
+                  BuildContext toHeroContext) =>
+              Material(child: toHeroContext.widget),
+        ),
         borderRadius: borderRadius,
         onTap: () => noteTapped(note),
         onLongPress: () => noteLongPressed(note),

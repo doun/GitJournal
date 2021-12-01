@@ -1,21 +1,22 @@
-# Polish translation  by Witold Firlej (grizz) https://grizz.pl https://github.com/grizz-pl
+# SPDX-FileCopyrightText: 2019-2021 1094553181xxcc <1094553181xxcc@gmail.com>
+# SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+# SPDX-FileCopyrightText: 2019-2021 grey <grey030@foxmail.com>
+#
+# SPDX-License-Identifier: CC-BY-4.0
 settings:
   ok: 好的
   cancel: 取消
   title: 设置
   author:
     label: 全名
-    hint: 谁应该编写这些更改？
     validator: 请输入名字
   email:
     label: E-mail
-    hint: E-mail地址
     validator:
       empty: 请输入E-mail地址
       invalid: 请输入有效的E-mail地址
   display:
     title: 显示设置
-    darkTheme: 深色主题
     homeScreen: 主页显示
     theme: Theme
     images:
@@ -91,6 +92,7 @@ settings:
           'on': true
         vectorGraphics: Vector Graphics (.svg)
         vectorGraphicsAdjustColors: Colors to Adjust
+    lang: Language
   gitAuthor: Git 权限设置
   versionInfo: 版本信息
   analytics: 分析
@@ -106,6 +108,7 @@ settings:
       info: Info
       debug: Debug
       verbose: Verbose
+    copy: Debug Logs Copied
   images:
     title: 图像设置
     subtitle: 图片存储方式
@@ -125,7 +128,7 @@ settings:
   noteMetaData:
     title: 笔记元信息设置
     subtitle: 配置如何保存笔记的元信息
-    text: Every note has some metadata which is stored in a YAML Header as follows -
+    text: "每条笔记都有一些元数据，这些元数据被存储在YAML格式数据头中，如下所示 "
     enableHeader: 启用 YAML 头文件
     modified: 被修改的
     created: 新增的
@@ -144,19 +147,20 @@ settings:
     customMetaData:
       title: Custom MetaData
       invalid: Invalid YAML
+    output: Output
+    input: Input
   privacy: Privacy Policy
   terms: Terms and Conditions
   experimental:
     title: Experimental Features
     subtitle: Try out features in Development
-    backlinks: Show Backlinks in Markdown Preview
-    fs: Show File System
     markdownToolbar: Show Markdown Toolbar in Editor
     graphView: Graph View
     accounts: Platform Independent Accounts
     includeSubfolders: Include Subfolders
     experimentalGitOps: Dart-only Git implementation
     merge: Dart-only merge implementation
+    autoCompleteTags: Tags Auto Completion
   editors:
     title: Editor Settings
     subtitle: Configure how different editors work
@@ -169,6 +173,7 @@ settings:
     rawEditor: Raw Editor
     choose: Choose Editor
     orgEditor: Org Editor
+    defaultNoteFormat: Default Note Format
   sortingField:
     modified: Last Modified
     created: Created
@@ -194,13 +199,13 @@ settings:
     listView: List View
     confirmDelete: Show a Popup to Confirm Deletes
     hardWrap: Enable hardWrap
+    emoji: Emojify text
   NoteFileNameFormat:
     iso8601WithTimeZone: ISO8601 With TimeZone
     iso8601: ISO8601
     iso8601WithoutColon: ISO8601 without Colons
     title: Title
     uuid: Uuid V4
-    simmple: yyyy-mm-dd-hh-mm-ss
     zettelkasten: yyyymmddhhmmss
     simple: yyyy-mm-dd-hh-mm-ss
     dateOnly: yyyy-mm-dd
@@ -229,6 +234,8 @@ settings:
     external: Store Repo Externally
     icloud: Store in iCloud
     repoLocation: Repo Location
+    notWritable: "{} is not writable"
+    failedExternal: Unable to get External Storage Directory
   drawer:
     title: Sidebar Settings
   bottomMenuBar:
@@ -236,6 +243,10 @@ settings:
     subtitle: Configure its appearance and behavior
     enable: Enable Bottom Menu Bar
   deleteRepo: Delete Repository
+  fileFormat:
+    markdown: Markdown
+    txt: Txt
+    orgMode: Org Mode
 editors:
   checklist:
     add: Add Item
@@ -254,6 +265,8 @@ editors:
     saveNoteFailed:
       title: Failed to Save Note
       message: We're sorry, but we cannot seem to save the Note. It has been copied to the clipboard to avoid data loss.
+    defaultFileNameHint: File Name
+    find: Find in note
 pro: Pro
 actions:
   newNote: New Note
@@ -312,7 +325,6 @@ widgets:
     failSend: Failed to send purchase request
     failPurchase: Failed to Purchase - {}
   FolderView:
-    noteSelected: Note Selected
     syncError: Sync Error {}
     headerOptions:
       heading: Header Options
@@ -332,6 +344,10 @@ widgets:
     noteDeleted: Note Deleted
     undo: Undo
     searchFailed: No Search Results Found
+    actions:
+      moveToFolder: Move To Folder
+    pinned: Pinned
+    others: Others
   imageRenderer:
     caption: "{first} - {second}"
     httpError: "Code: {status} for {url}"
@@ -369,6 +385,8 @@ drawer:
   graph: Graph View
   remote: No Git Host
   addRepo: Add Repository
+  login: Login
+  history: History
 setup:
   autoConfigure:
     title: How do you want to do this?
@@ -425,7 +443,7 @@ setup:
   sshKeyUserProvided:
     public: Public Key -
     private: Private Key -
-    password: Password
+    password: Private Key Password
   cloning: Cloning ...
   host:
     title: Select a Git Hosting Provider -
@@ -490,7 +508,7 @@ feature_timeline:
   issues: GitJournal's development is tracked on Github. Please consider voting on the issues you consider important.
 purchase_screen:
   title: Pro Version
-  desc: GitJournal is completely open source and is the result of significant development work. It has no venture capital or corporation backing and it never will. Your support directly sustains development.   GitJournal operates on a "pay what you want model (with a minimum)".
+  desc: 'GitJournal is completely open source and is the result of significant development work. It has no venture capital or corporation backing and it never will. Your support directly sustains development.   GitJournal operates on a "pay what you want model (with a minimum)".'
   restore: Restore Purchase
   oneTime:
     title: One Time Purchase
@@ -508,4 +526,4 @@ OnBoarding:
   subtitle: 'An Open Source Note Taking App built on top of Git'
   page2: 'Your Notes are stored in a standard Markdown + YAML Header format'
   page3: 'Sync your Local Git Repo with any provider'
-0: ""
+beta: BETA

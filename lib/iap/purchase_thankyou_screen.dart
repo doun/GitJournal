@@ -1,17 +1,30 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 
+import 'package:gitjournal/generated/locale_keys.g.dart';
+
 class PurchaseThankYouScreen extends StatelessWidget {
+  static const routePath = '/purchase_thank_you';
+
   @override
   Widget build(BuildContext context) {
     var theme = Theme.of(context);
     var textTheme = theme.textTheme;
     Widget w = Column(
       children: <Widget>[
-        Text(tr('purchase_screen.thanks.title'), style: textTheme.headline3),
         Text(
-          tr('purchase_screen.thanks.subtitle'),
+          tr(LocaleKeys.purchase_screen_thanks_title),
+          style: textTheme.headline3,
+        ),
+        Text(
+          tr(LocaleKeys.purchase_screen_thanks_subtitle),
           style: textTheme.headline4,
           textAlign: TextAlign.center,
         ),

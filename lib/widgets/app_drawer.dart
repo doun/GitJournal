@@ -1,23 +1,35 @@
-import 'dart:io' show Platform;
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:launch_review/launch_review.dart';
 import 'package:provider/provider.dart';
-import 'package:share/share.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:time/time.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:universal_io/io.dart' show Platform;
 
+import 'package:gitjournal/account/login_screen.dart';
 import 'package:gitjournal/analytics/analytics.dart';
 import 'package:gitjournal/features.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/history/history_screen.dart';
+import 'package:gitjournal/iap/purchase_screen.dart';
+import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/repository.dart';
 import 'package:gitjournal/repository_manager.dart';
-import 'package:gitjournal/settings/app_settings.dart';
-import 'package:gitjournal/utils/logger.dart';
-import 'package:gitjournal/utils/utils.dart';
+import 'package:gitjournal/screens/folder_listing.dart';
+import 'package:gitjournal/screens/graph_view.dart';
+import 'package:gitjournal/screens/home_screen.dart';
+import 'package:gitjournal/screens/tag_listing.dart';
+import 'package:gitjournal/settings/app_config.dart';
+import 'package:gitjournal/settings/bug_report.dart';
 import 'package:gitjournal/widgets/app_drawer_header.dart';
 import 'package:gitjournal/widgets/pro_overlay.dart';
 
@@ -58,7 +70,7 @@ class _AppDrawerState extends State<AppDrawer>
   }
 
   Widget _buildRepoList() {
-    var divider = Row(children: <Widget>[const Expanded(child: Divider())]);
+    var divider = Row(children: const <Widget>[Expanded(child: Divider())]);
     var repoManager = context.watch<RepositoryManager>();
     var repoIds = repoManager.repoIds;
 
@@ -71,9 +83,9 @@ class _AppDrawerState extends State<AppDrawer>
           child: _buildDrawerTile(
             context,
             icon: Icons.add,
-            title: tr('drawer.addRepo'),
+            title: tr(LocaleKeys.drawer_addRepo),
             onTap: () {
-              repoManager.addRepo();
+              var _ = repoManager.addRepoAndSwitch();
               Navigator.pop(context);
             },
             selected: false,
@@ -99,28 +111,29 @@ class _AppDrawerState extends State<AppDrawer>
   Widget build(BuildContext context) {
     Widget? setupGitButton;
     var repo = Provider.of<GitJournalRepo>(context);
-    var appSettings = Provider.of<AppSettings>(context);
+    var appConfig = Provider.of<AppConfig>(context);
     var textStyle = Theme.of(context).textTheme.bodyText1;
     var currentRoute = ModalRoute.of(context)!.settings.name;
 
     if (!repo.remoteGitRepoConfigured) {
       setupGitButton = ListTile(
         leading: Icon(Icons.sync, color: textStyle!.color),
-        title: Text(tr('drawer.setup'), style: textStyle),
+        title: Text(tr(LocaleKeys.drawer_setup), style: textStyle),
         trailing: const Icon(
           Icons.info,
           color: Colors.red,
         ),
         onTap: () {
           Navigator.pop(context);
-          Navigator.pushNamed(context, "/setupRemoteGit");
+          var _ = Navigator.pushNamed(context, "/setupRemoteGit");
 
           logEvent(Event.DrawerSetupGitHost);
         },
       );
     }
 
-    var divider = Row(children: <Widget>[const Expanded(child: Divider())]);
+    var divider = Row(children: const <Widget>[Expanded(child: Divider())]);
+    var user = Supabase.instance.client.auth.currentUser;
 
     return Drawer(
       child: ListView(
@@ -130,23 +143,23 @@ class _AppDrawerState extends State<AppDrawer>
           AppDrawerHeader(
             repoListToggled: () {
               if (animController.isCompleted) {
-                animController.reverse(from: 1.0);
+                var _ = animController.reverse(from: 1.0);
               } else {
-                animController.forward(from: 0.0);
+                var _ = animController.forward(from: 0.0);
               }
             },
           ),
           // If they are multiple show the current one which a tick mark
           _buildRepoList(),
           if (setupGitButton != null) ...[setupGitButton, divider],
-          if (!appSettings.proMode)
+          if (!appConfig.proMode)
             _buildDrawerTile(
               context,
               icon: Icons.power,
-              title: tr('drawer.pro'),
+              title: tr(LocaleKeys.drawer_pro),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, "/purchase");
+                var _ = Navigator.pushNamed(context, PurchaseScreen.routePath);
 
                 logEvent(
                   Event.PurchaseScreenOpen,
@@ -154,60 +167,60 @@ class _AppDrawerState extends State<AppDrawer>
                 );
               },
             ),
-          if (appSettings.experimentalAccounts)
+          if (appConfig.experimentalAccounts && user == null)
             _buildDrawerTile(
               context,
               icon: Icons.account_circle,
-              title: 'Login',
-              onTap: () => _navTopLevel(context, '/login'),
-              selected: currentRoute == '/login',
+              title: tr(LocaleKeys.drawer_login),
+              onTap: () => _navTopLevel(context, LoginPage.routePath),
+              selected: currentRoute == LoginPage.routePath,
             ),
-          if (!appSettings.proMode) divider,
+          if (!appConfig.proMode) divider,
           _buildDrawerTile(
             context,
             icon: Icons.note,
-            title: tr('drawer.all'),
-            onTap: () => _navTopLevel(context, '/'),
-            selected: currentRoute == '/',
+            title: tr(LocaleKeys.drawer_all),
+            onTap: () => _navTopLevel(context, HomeScreen.routePath),
+            selected: currentRoute == HomeScreen.routePath,
           ),
           _buildDrawerTile(
             context,
             icon: Icons.folder,
-            title: tr('drawer.folders'),
-            onTap: () => _navTopLevel(context, '/folders'),
-            selected: currentRoute == "/folders",
+            title: tr(LocaleKeys.drawer_folders),
+            onTap: () => _navTopLevel(context, FolderListingScreen.routePath),
+            selected: currentRoute == FolderListingScreen.routePath,
           ),
-          if (appSettings.experimentalFs)
-            _buildDrawerTile(
-              context,
-              icon: FontAwesomeIcons.solidFolderOpen,
-              isFontAwesome: true,
-              title: tr('drawer.fs'),
-              onTap: () => _navTopLevel(context, '/filesystem'),
-              selected: currentRoute == "/filesystem",
-            ),
-          if (appSettings.experimentalGraphView)
+          if (appConfig.experimentalGraphView)
             _buildDrawerTile(
               context,
               icon: FontAwesomeIcons.projectDiagram,
               isFontAwesome: true,
-              title: tr('drawer.graph'),
-              onTap: () => _navTopLevel(context, '/graph'),
-              selected: currentRoute == "/graph",
+              title: tr(LocaleKeys.drawer_graph),
+              onTap: () => _navTopLevel(context, GraphViewScreen.routePath),
+              selected: currentRoute == GraphViewScreen.routePath,
+            ),
+          if (appConfig.experimentalHistory)
+            _buildDrawerTile(
+              context,
+              icon: Icons.history,
+              isFontAwesome: true,
+              title: tr(LocaleKeys.drawer_history),
+              onTap: () => _navTopLevel(context, HistoryScreen.routePath),
+              selected: currentRoute == HistoryScreen.routePath,
             ),
           _buildDrawerTile(
             context,
             icon: FontAwesomeIcons.tag,
             isFontAwesome: true,
-            title: tr('drawer.tags'),
-            onTap: () => _navTopLevel(context, '/tags'),
-            selected: currentRoute == "/tags",
+            title: tr(LocaleKeys.drawer_tags),
+            onTap: () => _navTopLevel(context, TagListingScreen.routePath),
+            selected: currentRoute == TagListingScreen.routePath,
           ),
           divider,
           _buildDrawerTile(
             context,
             icon: Icons.share,
-            title: tr('drawer.share'),
+            title: tr(LocaleKeys.drawer_share),
             onTap: () {
               Navigator.pop(context);
               Share.share('Checkout GitJournal https://gitjournal.io/');
@@ -215,93 +228,46 @@ class _AppDrawerState extends State<AppDrawer>
               logEvent(Event.DrawerShare);
             },
           ),
-          _buildDrawerTile(
-            context,
-            icon: Icons.feedback,
-            title: tr('drawer.rate'),
-            onTap: () {
-              LaunchReview.launch(
-                androidAppId: "io.gitjournal.gitjournal",
-                iOSAppId: "1466519634",
-              );
+          if (Platform.isAndroid || Platform.isIOS)
+            _buildDrawerTile(
+              context,
+              icon: Icons.feedback,
+              title: tr(LocaleKeys.drawer_rate),
+              onTap: () {
+                LaunchReview.launch(
+                  androidAppId: "io.gitjournal.gitjournal",
+                  iOSAppId: "1466519634",
+                );
 
-              Navigator.pop(context);
-              logEvent(Event.DrawerRate);
-            },
-          ),
+                Navigator.pop(context);
+                logEvent(Event.DrawerRate);
+              },
+            ),
           _buildDrawerTile(
             context,
             icon: Icons.rate_review,
-            title: tr('drawer.feedback'),
+            title: tr(LocaleKeys.drawer_feedback),
             onTap: () async {
-              var platform = Platform.operatingSystem;
-              var versionText = await getVersionString();
-              var isPro = AppSettings.instance.proMode;
-
-              var body =
-                  "Hey!\n\nHere are some ways to improve GitJournal - \n \n\n";
-              body += "Version: $versionText\n";
-              body += "Platform: $platform\n";
-              body += "isPro: $isPro\n";
-
-              var exp = AppSettings.instance.proExpirationDate;
-              if (exp.isNotEmpty) {
-                body += "expiryDate: $exp";
-              }
-
-              body = Uri.encodeComponent(body);
-
-              var subject = 'GitJournal Feedback';
-              subject = Uri.encodeComponent(subject);
-
-              var emailAddress = 'feedback@gitjournal.io';
-
-              var url = 'mailto:$emailAddress?subject=$subject&body=$body';
-              launch(url);
-
+              await createFeedback(context);
               Navigator.pop(context);
-              logEvent(Event.DrawerFeedback);
             },
           ),
           _buildDrawerTile(
             context,
             icon: Icons.bug_report,
-            title: tr('drawer.bug'),
+            title: tr(LocaleKeys.drawer_bug),
             onTap: () async {
-              var platform = Platform.operatingSystem;
-              var versionText = await getVersionString();
-              var isPro = AppSettings.instance.proMode;
-
-              var body = "Hey!\n\nI found a bug in GitJournal - \n \n\n";
-              body += "Version: $versionText\n";
-              body += "Platform: $platform\n";
-              body += "isPro: $isPro\n";
-
-              var exp = AppSettings.instance.proExpirationDate;
-              if (exp.isNotEmpty) {
-                body += "expiryDate: $exp";
-              }
-
-              final Email email = Email(
-                body: body,
-                subject: 'GitJournal Bug',
-                recipients: ['bugs@gitjournal.io'],
-                attachmentPaths: Log.filePathsForDates(2),
-              );
-
-              await FlutterEmailSender.send(email);
-
+              await createBugReport(context);
               Navigator.pop(context);
-              logEvent(Event.DrawerBugReport);
             },
           ),
           _buildDrawerTile(
             context,
             icon: Icons.settings,
-            title: tr('settings.title'),
+            title: tr(LocaleKeys.settings_title),
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, "/settings");
+              var _ = Navigator.pushNamed(context, "/settings");
 
               logEvent(Event.DrawerSettings);
             },
@@ -322,7 +288,7 @@ class _AppDrawerState extends State<AppDrawer>
     var theme = Theme.of(context);
     var listTileTheme = ListTileTheme.of(context);
     var textStyle = theme.textTheme.bodyText1!.copyWith(
-      color: selected ? theme.accentColor : listTileTheme.textColor,
+      color: selected ? theme.colorScheme.secondary : listTileTheme.textColor,
     );
 
     var iconW = !isFontAwesome
@@ -356,21 +322,25 @@ class RepoTile extends StatelessWidget {
     var listTileTheme = ListTileTheme.of(context);
     var repoManager = context.watch<RepositoryManager>();
 
-    // FIXME: Improve marking the selected repo
     var selected = repoManager.currentId == id;
     var textStyle = theme.textTheme.bodyText1!.copyWith(
-      color: selected ? theme.accentColor : listTileTheme.textColor,
+      color: selected ? theme.colorScheme.secondary : listTileTheme.textColor,
     );
 
     var icon = FaIcon(FontAwesomeIcons.book, color: textStyle.color);
 
-    return ListTile(
+    var tile = ListTile(
       leading: icon,
       title: Text(repoManager.repoFolderName(id)),
       onTap: () {
         repoManager.setCurrentRepo(id);
         Navigator.pop(context);
       },
+    );
+
+    return Container(
+      child: tile,
+      color: selected ? theme.selectedRowColor : theme.scaffoldBackgroundColor,
     );
   }
 }
@@ -401,6 +371,6 @@ void _navTopLevel(BuildContext context, String toRoute) {
     },
   );
   if (!wasParent) {
-    Navigator.pushNamed(context, toRoute);
+    var _ = Navigator.pushNamed(context, toRoute);
   }
 }

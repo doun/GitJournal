@@ -1,9 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gitjournal/core/notes_folder_fs.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
 
 typedef NoteFolderCallback = void Function(NotesFolderFS);
 
@@ -12,7 +19,7 @@ class FolderSelectionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final notesFolder = Provider.of<NotesFolderFS>(context);
 
-    var body = Container(
+    var body = SizedBox(
       width: double.maxFinite,
       child: FolderTreeView(
         rootFolder: notesFolder,
@@ -23,19 +30,19 @@ class FolderSelectionDialog extends StatelessWidget {
     );
 
     return AlertDialog(
-      title: Text(tr('widgets.FolderSelectionDialog.title')),
+      title: Text(tr(LocaleKeys.widgets_FolderSelectionDialog_title)),
       content: body,
     );
   }
 }
 
-typedef void FolderSelectedCallback(NotesFolderFS folder);
+typedef FolderSelectedCallback = void Function(NotesFolderFS folder);
 
 class FolderTreeView extends StatelessWidget {
   final NotesFolderFS rootFolder;
   final FolderSelectedCallback onFolderEntered;
 
-  FolderTreeView({
+  const FolderTreeView({
     Key? key,
     required this.rootFolder,
     required this.onFolderEntered,
@@ -58,7 +65,7 @@ class FolderMiniTile extends StatefulWidget {
   final NotesFolderFS folder;
   final FolderSelectedCallback onTap;
 
-  FolderMiniTile({
+  const FolderMiniTile({
     required this.folder,
     required this.onTap,
   });
@@ -109,7 +116,7 @@ class FolderMiniTileState extends State<FolderMiniTile> {
           child: Icon(
             Icons.folder,
             size: 24,
-            color: Theme.of(context).accentColor,
+            color: Theme.of(context).colorScheme.secondary,
           ),
         ),
         title: Text(folder.publicName),
@@ -128,12 +135,12 @@ class FolderMiniTileState extends State<FolderMiniTile> {
     if (!_isExpanded) return Container();
 
     var children = <FolderMiniTile>[];
-    widget.folder.subFolders.forEach((folder) {
+    for (var folder in widget.folder.subFolders) {
       children.add(FolderMiniTile(
         folder: folder as NotesFolderFS,
         onTap: widget.onTap,
       ));
-    });
+    }
 
     return Container(
       margin: const EdgeInsets.only(left: 8.0),

@@ -1,28 +1,8 @@
 /*
-  (c) Copyright 2020 Vishesh Handa
-
-  Licensed under the MIT license:
-
-      http://www.opensource.org/licenses/mit-license.php
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
-*/
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 class InlineTagsProcessor {
   final Set<String> tagPrefixes;
@@ -33,13 +13,8 @@ class InlineTagsProcessor {
     var tags = <String>{};
 
     for (var prefix in tagPrefixes) {
-      // FIXME: Do not hardcode this
-      var p = prefix;
-      if (p == '+') {
-        p = '\\+';
-      }
-
-      var regexp = RegExp(r'(^|\s)' + p + r'([^\s]+)(\s|$)');
+      var p = RegExp.escape(prefix);
+      var regexp = RegExp(r'(^|\s)' + p + r'([\S]+)');
       var matches = regexp.allMatches(text);
       for (var match in matches) {
         var tag = match.group(2)!;
@@ -50,14 +25,24 @@ class InlineTagsProcessor {
 
         var all = tag.split(prefix);
         for (var t in all) {
-          t = t.trim();
+          t = sanitize(t);
           if (t.isNotEmpty) {
-            tags.add(t);
+            var _ = tags.add(t);
           }
         }
       }
     }
 
     return tags;
+  }
+
+  static String sanitize(String input) {
+    input = input.trim();
+    input = input.replaceAll(',', '');
+    input = input.replaceAll('.', '');
+    input = input.replaceAll(':', '');
+    input = input.replaceAll(';', '');
+
+    return input.trim();
   }
 }

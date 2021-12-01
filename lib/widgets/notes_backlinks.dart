@@ -1,26 +1,36 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:collection/collection.dart';
 import 'package:easy_localization/easy_localization.dart';
 
+import 'package:gitjournal/core/folder/notes_folder.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/core/link.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder.dart';
-import 'package:gitjournal/core/notes_folder_fs.dart';
+import 'package:gitjournal/core/views/note_links_view.dart';
 import 'package:gitjournal/features.dart';
 import 'package:gitjournal/folder_views/common.dart';
 import 'package:gitjournal/utils/link_resolver.dart';
+import 'package:gitjournal/widgets/future_builder_with_progress.dart';
 import 'package:gitjournal/widgets/pro_overlay.dart';
 
 class NoteBacklinkRenderer extends StatefulWidget {
   final Note note;
   final NotesFolderFS rootFolder;
   final NotesFolder parentFolder;
+  final NoteLinksView linksView;
 
-  NoteBacklinkRenderer({
+  const NoteBacklinkRenderer({
     required this.note,
     required this.rootFolder,
     required this.parentFolder,
+    required this.linksView,
   });
 
   @override
@@ -38,10 +48,10 @@ class _NoteBacklinkRendererState extends State<NoteBacklinkRenderer> {
   }
 
   Future<void> _initStateAsync() async {
-    var predicate = (Note n) async {
+    Future<bool> predicate(Note n) async {
       // Log.d("NoteBacklinkRenderer Predicate", props: {"filePath": n.filePath});
 
-      var links = await n.fetchLinks();
+      var links = await widget.linksView.fetchLinks(n);
       var linkResolver = LinkResolver(n);
       var matchedLink = links.firstWhereOrNull(
         (l) {
@@ -56,7 +66,7 @@ class _NoteBacklinkRendererState extends State<NoteBacklinkRenderer> {
 
       // Log.d("NoteBacklinkRenderer Predicate ${matchedLink != null}");
       return matchedLink != null;
-    };
+    }
 
     var l = await widget.rootFolder.matchNotes(predicate);
     if (!mounted) return;
@@ -69,11 +79,6 @@ class _NoteBacklinkRendererState extends State<NoteBacklinkRenderer> {
   Widget build(BuildContext context) {
     if (linkedNotes.isEmpty) {
       return Container();
-    }
-
-    var title = widget.note.title;
-    if (title.isEmpty) {
-      title = widget.note.fileName;
     }
 
     var num = linkedNotes.length;
@@ -119,7 +124,7 @@ class NoteSnippet extends StatelessWidget {
   final Note parentNote;
   final void Function() onTap;
 
-  NoteSnippet({
+  const NoteSnippet({
     required this.note,
     required this.parentNote,
     required this.onTap,
@@ -143,7 +148,7 @@ class NoteSnippet extends StatelessWidget {
           width: MediaQuery.of(context).size.width,
           child: Column(
             children: <Widget>[
-              Text('$title', style: textTheme.bodyText1),
+              Text(title, style: textTheme.bodyText1),
               const SizedBox(height: 8.0),
               _buildSummary(context),
             ],
@@ -156,12 +161,17 @@ class NoteSnippet extends StatelessWidget {
   }
 
   Widget _buildSummary(BuildContext context) {
-    var textTheme = Theme.of(context).textTheme;
-    var links = note.links();
-    if (links == null || links.isEmpty) {
-      return Container();
-    }
+    var linksProvider = NoteLinksProvider.of(context);
+    return FutureBuilderWithProgress(future: () async {
+      var links = await linksProvider.fetchLinks(note);
+      if (links.isEmpty) {
+        return Container();
+      }
+      return _buildSummaryWithLinks(context, links);
+    }());
+  }
 
+  Widget _buildSummaryWithLinks(BuildContext context, List<Link> links) {
     links = links.where((l) {
       var linkResolver = LinkResolver(note);
       var resolvedNote = linkResolver.resolveLink(l);
@@ -184,6 +194,8 @@ class NoteSnippet extends StatelessWidget {
       },
       orElse: () => "",
     );
+
+    var textTheme = Theme.of(context).textTheme;
 
     // vHanda: This isn't a very fool proof way of figuring out the line
     // FIXME: Ideally, we should be parsing the entire markdown properly and rendering all of it

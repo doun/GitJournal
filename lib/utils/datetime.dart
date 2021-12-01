@@ -1,8 +1,14 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:core';
 
 import 'package:intl/intl.dart';
 
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/logger/logger.dart';
 
 final _dateOnlyFormat = DateFormat("yyyy-MM-dd");
 final _simpleDateFormat = DateFormat("yyyy-MM-dd-HH-mm-ss");
@@ -79,4 +85,12 @@ DateTime? parseDateTime(String str) {
   }
 
   return dt;
+}
+
+DateTime parseUnixTimeStamp(int val) {
+  return DateTime.fromMillisecondsSinceEpoch(val * 1000, isUtc: true);
+}
+
+int toUnixTimeStamp(DateTime dt) {
+  return dt.toUtc().millisecondsSinceEpoch ~/ 1000;
 }

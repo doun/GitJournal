@@ -1,14 +1,23 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gitjournal/core/notes_folder_fs.dart';
-import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/settings/settings_widgets.dart';
+import 'package:gitjournal/core/folder/notes_folder_config.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/settings/widgets/settings_list_preference.dart';
 import 'package:gitjournal/widgets/folder_selection_dialog.dart';
 
 class SettingsImagesScreen extends StatefulWidget {
+  static const routePath = '/settings/images';
+
   @override
   SettingsImagesScreenState createState() => SettingsImagesScreenState();
 }
@@ -16,14 +25,14 @@ class SettingsImagesScreen extends StatefulWidget {
 class SettingsImagesScreenState extends State<SettingsImagesScreen> {
   @override
   Widget build(BuildContext context) {
-    var settings = Provider.of<Settings>(context);
+    var folderConfig = Provider.of<NotesFolderConfig>(context);
     var folder = Provider.of<NotesFolderFS>(context)
-        .getFolderWithSpec(settings.imageLocationSpec);
+        .getFolderWithSpec(folderConfig.imageLocationSpec);
 
     // If the Custom Folder specified no longer exists
-    if (settings.imageLocationSpec != "." && folder == null) {
-      settings.imageLocationSpec = ".";
-      settings.save();
+    if (folderConfig.imageLocationSpec != "." && folder == null) {
+      folderConfig.imageLocationSpec = ".";
+      folderConfig.save();
     }
 
     var sameFolder = tr("settings.images.currentFolder");
@@ -33,19 +42,19 @@ class SettingsImagesScreenState extends State<SettingsImagesScreen> {
       ListPreference(
         title: tr("settings.images.imageLocation"),
         currentOption:
-            settings.imageLocationSpec == '.' ? sameFolder : customFolder,
+            folderConfig.imageLocationSpec == '.' ? sameFolder : customFolder,
         options: [sameFolder, customFolder],
         onChange: (String publicStr) {
           if (publicStr == sameFolder) {
-            settings.imageLocationSpec = ".";
+            folderConfig.imageLocationSpec = ".";
           } else {
-            settings.imageLocationSpec = "";
+            folderConfig.imageLocationSpec = "";
           }
-          settings.save();
+          folderConfig.save();
           setState(() {});
         },
       ),
-      if (settings.imageLocationSpec != '.')
+      if (folderConfig.imageLocationSpec != '.')
         ListTile(
           title: Text(customFolder),
           subtitle: Text(folder != null ? folder.publicName : "/"),
@@ -55,9 +64,9 @@ class SettingsImagesScreenState extends State<SettingsImagesScreen> {
               builder: (context) => FolderSelectionDialog(),
             );
 
-            settings.imageLocationSpec =
-                destFolder != null ? destFolder.pathSpec() : "";
-            settings.save();
+            folderConfig.imageLocationSpec =
+                destFolder != null ? destFolder.folderPath : "";
+            folderConfig.save();
             setState(() {});
           },
         ),
@@ -65,7 +74,7 @@ class SettingsImagesScreenState extends State<SettingsImagesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(tr('settings.images.title')),
+        title: Text(tr(LocaleKeys.settings_images_title)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

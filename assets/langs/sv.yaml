@@ -1,21 +1,21 @@
-# Polish translation  by Witold Firlej (grizz) https://grizz.pl https://github.com/grizz-pl
+# SPDX-FileCopyrightText: 2019-2021 Fredrikiglum <fredrikiglum@gmail.com>
+# SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+#
+# SPDX-License-Identifier: CC-BY-4.0
 settings:
   ok: Ok
   cancel: Avbryt
   title: inställningar
   author:
     label: Fullständigt namn
-    hint: Vem ska författa ändringarna?
     validator: Ange ett namn
   email:
     label: E-post
-    hint: E-postadress
     validator:
       empty: Ange ett e-postmeddelande
       invalid: Ange ett giltigt e-postmeddelande
   display:
     title: Skärminställningar
-    darkTheme: Mörkt tema
     homeScreen: Hemskärm
     theme: Theme
     images:
@@ -91,6 +91,7 @@ settings:
           'on': true
         vectorGraphics: Vector Graphics (.svg)
         vectorGraphicsAdjustColors: Colors to Adjust
+    lang: Language
   gitAuthor: Git Author Settings
   versionInfo: Information om versionen
   analytics: Analytics
@@ -106,6 +107,7 @@ settings:
       info: Info
       debug: Felsöka
       verbose: Mångordig
+    copy: Debug Logs Copied
   images:
     title: Bildinställningar
     subtitle: Konfigurera hur bilder lagras
@@ -144,19 +146,20 @@ settings:
     customMetaData:
       title: Anpassad metadata
       invalid: Ogiltig YAML
+    output: Output
+    input: Input
   privacy: Integritetspolicy
   terms: Villkor
   experimental:
     title: Experimentella funktioner
     subtitle: Testa utvecklingsfunktioner
-    backlinks: Visa bakåtlänkar i förhandsvisning för Markdown
-    fs: Visa filsystem
     markdownToolbar: Visa Markdown Toolbar i Editor
     graphView: Graph View
     accounts: Platform Independent Accounts
     includeSubfolders: Include Subfolders
     experimentalGitOps: Dart-only Git implementation
     merge: Dart-only merge implementation
+    autoCompleteTags: Tags Auto Completion
   editors:
     title: Editorinställningar
     subtitle: Konfigurera hur olika redaktörer fungerar
@@ -169,6 +172,7 @@ settings:
     rawEditor: Raw Editor
     choose: Välj Editor
     orgEditor: Org Editor
+    defaultNoteFormat: Default Note Format
   sortingField:
     modified: Senast ändrad
     created: Skapad
@@ -194,13 +198,13 @@ settings:
     listView: Listvy
     confirmDelete: Show a Popup to Confirm Deletes
     hardWrap: Enable hardWrap
+    emoji: Emojify text
   NoteFileNameFormat:
     iso8601WithTimeZone: ISO8601 Med TimeZone
     iso8601: ISO8601
     iso8601WithoutColon: ISO8601 utan kolon
     title: Titel
     uuid: Uuid V4
-    simmple: åååå-mm-dd-hh-mm-ss
     zettelkasten: yyyymmddhhmmss
     simple: yyyy-mm-dd-hh-mm-ss
     dateOnly: yyyy-mm-dd
@@ -229,6 +233,8 @@ settings:
     external: Store Repo Externally
     icloud: Store in iCloud
     repoLocation: Repo Location
+    notWritable: "{} is not writable"
+    failedExternal: Unable to get External Storage Directory
   drawer:
     title: Sidebar Settings
   bottomMenuBar:
@@ -236,6 +242,10 @@ settings:
     subtitle: Configure its appearance and behavior
     enable: Enable Bottom Menu Bar
   deleteRepo: Delete Repository
+  fileFormat:
+    markdown: Markdown
+    txt: Txt
+    orgMode: Org Mode
 editors:
   checklist:
     add: Lägg till vara
@@ -254,6 +264,8 @@ editors:
     saveNoteFailed:
       title: Det gick inte att spara anteckningen
       message: Vi är ledsna, men vi kan inte tycks spara anteckningen. Det har kopierats till Urklipp för att undvika dataförlust.
+    defaultFileNameHint: File Name
+    find: Find in note
 pro: Proffs
 actions:
   newNote: Ny anteckning
@@ -313,7 +325,6 @@ widgets:
     failSend: Failed to send purchase request
     failPurchase: Failed to Purchase - {}
   FolderView:
-    noteSelected: Not vald
     syncError: Synkroniseringsfel {}
     headerOptions:
       heading: Rubrikalternativ
@@ -333,6 +344,10 @@ widgets:
     noteDeleted: Note Deleted
     undo: Undo
     searchFailed: No Search Results Found
+    actions:
+      moveToFolder: Move To Folder
+    pinned: Pinned
+    others: Others
   imageRenderer:
     caption: "{first} - {second}"
     httpError: "Code: {status} for {url}"
@@ -370,6 +385,8 @@ drawer:
   graph: Graph View
   remote: No Git Host
   addRepo: Add Repository
+  login: Login
+  history: History
 setup:
   autoConfigure:
     title: Hur vill du göra det här?
@@ -426,7 +443,7 @@ setup:
   sshKeyUserProvided:
     public: Allmän nyckel -
     private: Privat nyckel -
-    password: Password
+    password: Private Key Password
   cloning: Kloning ...
   host:
     title: Välj en Git Hosting Provider -
@@ -491,7 +508,7 @@ feature_timeline:
   issues: GitJournal's development is tracked on Github. Please consider voting on the issues you consider important.
 purchase_screen:
   title: Pro-version
-  desc: GitJournal är helt öppen källkod och är resultatet av betydande utvecklingsarbete. Det har inget riskkapital eller stöd från företag och kommer aldrig att göra det. Ditt stöd upprätthåller utvecklingen direkt. GitJournal arbetar med en "betala vad du vill modell (med ett minimum)".
+  desc: 'GitJournal är helt öppen källkod och är resultatet av betydande utvecklingsarbete. Det har inget riskkapital eller stöd från företag och kommer aldrig att göra det. Ditt stöd upprätthåller utvecklingen direkt. GitJournal arbetar med en "betala vad du vill modell (med ett minimum)".'
   restore: Återställa köp
   oneTime:
     title: Engångsköp
@@ -509,4 +526,4 @@ OnBoarding:
   subtitle: 'An Open Source Note Taking App built on top of Git'
   page2: 'Your Notes are stored in a standard Markdown + YAML Header format'
   page3: 'Sync your Local Git Repo with any provider'
-0: ""
+beta: BETA

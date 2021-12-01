@@ -1,13 +1,21 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import 'package:gitjournal/generated/locale_keys.g.dart';
+
 class NoteTagEditor extends StatefulWidget {
   final Set<String> selectedTags;
   final Set<String> allTags;
 
-  NoteTagEditor({required this.selectedTags, required this.allTags});
+  const NoteTagEditor({required this.selectedTags, required this.allTags});
 
   @override
   _NoteTagEditorState createState() => _NoteTagEditorState();
@@ -51,7 +59,7 @@ class _NoteTagEditorState extends State<NoteTagEditor> {
           style: theme.textTheme.headline6,
           decoration: InputDecoration(
             border: InputBorder.none,
-            hintText: tr('editors.common.tags'),
+            hintText: tr(LocaleKeys.editors_common_tags),
             hintStyle: theme.inputDecorationTheme.hintStyle,
           ),
           onSubmitted: _addTag,
@@ -90,15 +98,16 @@ class _NoteTagEditorState extends State<NoteTagEditor> {
 
   Widget _buildTagTile(String tag) {
     var containsTag = _selectedTags.contains(tag);
-    var _onTap = () {
+    void _onTap() {
       setState(() {
         if (containsTag) {
-          _selectedTags.remove(tag);
+          var _ = _selectedTags.remove(tag);
         } else {
-          _selectedTags.add(tag);
+          var _ = _selectedTags.add(tag);
         }
       });
-    };
+    }
+
     return ListTile(
       leading: const FaIcon(FontAwesomeIcons.tag),
       title: Text(tag),
@@ -117,8 +126,9 @@ class _NoteTagEditorState extends State<NoteTagEditor> {
 
   void _addTag(String tag) {
     setState(() {
-      _selectedTags.add(tag);
-      _allTags.add(tag);
+      dynamic _;
+      _ = _selectedTags.add(tag);
+      _ = _allTags.add(tag);
       _textController.text = "";
     });
   }

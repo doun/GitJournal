@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:convert';
 
 String resolveMergeConflict(String fileContents) {
@@ -8,29 +14,29 @@ String resolveMergeConflict(String fileContents) {
   var seenStartMarker = false;
   var seenMiddleMarker = false;
 
-  lines.forEach((line) {
+  for (var line in lines) {
     if (line.startsWith("<<<<<<<") && !inMergeConflict) {
       inMergeConflict = true;
       seenStartMarker = true;
-      return;
+      continue;
     }
     if (line == "=======" && inMergeConflict && seenStartMarker) {
       seenMiddleMarker = true;
-      return;
+      continue;
     }
     if (line.startsWith(">>>>>>>") && inMergeConflict && seenMiddleMarker) {
       inMergeConflict = false;
       seenStartMarker = false;
       seenMiddleMarker = false;
-      return;
+      continue;
     }
 
     if (inMergeConflict && seenMiddleMarker) {
-      return;
+      continue;
     }
 
     newLines.add(line);
-  });
+  }
 
   return newLines.join('\n');
 }

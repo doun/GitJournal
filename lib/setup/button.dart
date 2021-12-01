@@ -1,20 +1,29 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:function_types/function_types.dart';
 
 import 'package:gitjournal/analytics/analytics.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/logger/logger.dart';
 
 class GitHostSetupButton extends StatelessWidget {
   final Func0<void> onPressed;
   final String text;
   final String? iconUrl;
+  final bool enabled;
 
-  GitHostSetupButton({
+  const GitHostSetupButton({
     required this.text,
     required this.onPressed,
     this.iconUrl,
-  });
+    this.enabled = true,
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +38,7 @@ class GitHostSetupButton extends StatelessWidget {
           ),
           style: ButtonStyle(
             backgroundColor: MaterialStateProperty.all<Color>(
-                Theme.of(context).primaryColor),
+                enabled ? Theme.of(context).primaryColor : Colors.grey),
           ),
           onPressed: _onPressedWithAnalytics,
         ),

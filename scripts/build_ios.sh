@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 set -eo pipefail
 
 cd "$(dirname "$0")"
@@ -46,9 +50,16 @@ fi
 
 xcodebuild -version
 
-flutter build ios --release --no-codesign --build-number="$BUILD_NUM" --build-name="$BUILD_NAME"
+flutter build ios --release --no-codesign --build-number="$BUILD_NUM" --build-name="$BUILD_NAME" --dart-define=INSTALL_SOURCE=appstore
 
 cd ios
 
 export FASTLANE_PASSWORD=$(cat keys/fastlane_password)
+
+echo "Updating fastlane ..."
+bundle exec fastlane --version
+bundle update fastlane
+bundle exec fastlane --version
+
+echo "fastlane release ..."
 bundle exec fastlane release

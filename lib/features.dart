@@ -1,12 +1,22 @@
-import 'dart:io' show Platform;
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import 'package:flutter/foundation.dart' as foundation;
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:universal_io/io.dart' show Platform;
 
 class Features {
   // Make the desktop version always pro, for now.
-  static bool alwaysPro =
-      Platform.isWindows || Platform.isLinux || Platform.isMacOS;
-  static const bool perFolderConfig = false;
+  static bool alwaysPro = foundation.kDebugMode ||
+      Platform.isWindows ||
+      Platform.isLinux ||
+      Platform.isMacOS;
+
+  static const fancyOrgEditor = false;
 
   static final all = <Feature>[
     Feature.basicSearch,

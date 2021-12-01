@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:convert';
 
 import 'package:gitjournal/apis/githost.dart';
@@ -13,7 +19,7 @@ class GitHubFake implements GitHost {
   @override
   void init(OAuthCallback oAuthCallback) {}
   @override
-  Future launchOAuthScreen() async {}
+  Future<void> launchOAuthScreen() async {}
 
   @override
   Future<Result<UserInfo>> getUserInfo() async {
@@ -44,11 +50,11 @@ class GitHubFake implements GitHost {
   Future<Result<List<GitHostRepo>>> listRepos() async {
     List<dynamic> list = jsonDecode(data);
     var repos = <GitHostRepo>[];
-    list.forEach((dynamic d) {
+    for (var d in list) {
       var map = Map<String, dynamic>.from(d);
       var repo = GitHub.repoFromJson(map);
       repos.add(repo);
-    });
+    }
 
     return Result(repos);
   }

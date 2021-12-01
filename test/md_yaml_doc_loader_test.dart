@@ -1,8 +1,13 @@
-import 'dart:io';
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 
 import 'package:dart_git/utils/result.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:universal_io/io.dart';
 
 import 'package:gitjournal/core/md_yaml_doc_loader.dart';
 

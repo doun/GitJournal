@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -5,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:time/time.dart';
 
 import 'package:gitjournal/editors/common.dart';
+import 'package:gitjournal/logger/logger.dart';
 
 class AutoCompletionWidget extends StatefulWidget {
   final FocusNode textFieldFocusNode;
@@ -12,14 +19,17 @@ class AutoCompletionWidget extends StatefulWidget {
   final TextStyle textFieldStyle;
   final TextEditingController textController;
   final Widget child;
+  final List<String> tags;
 
-  AutoCompletionWidget({
+  const AutoCompletionWidget({
+    Key? key,
     required this.textFieldFocusNode,
     required this.textFieldKey,
     required this.textFieldStyle,
     required this.textController,
     required this.child,
-  });
+    required this.tags,
+  }) : super(key: key);
 
   @override
   _AutoCompletionWidgetState createState() => _AutoCompletionWidgetState();
@@ -29,6 +39,7 @@ class _AutoCompletionWidgetState extends State<AutoCompletionWidget> {
   OverlayEntry? overlayEntry;
 
   var autoCompleter = TagsAutoCompleter();
+  List<String>? tags;
 
   @override
   void initState() {
@@ -56,9 +67,8 @@ class _AutoCompletionWidgetState extends State<AutoCompletionWidget> {
     try {
       var es = TextEditorState(text, selection.baseOffset);
       range = autoCompleter.textChanged(es);
-    } catch (e) {
-      print(e);
-      print("bah");
+    } catch (e, st) {
+      Log.e("AutoCompleter", ex: e, stacktrace: st);
     }
 
     if (range.isEmpty) {
@@ -75,7 +85,7 @@ class _AutoCompletionWidgetState extends State<AutoCompletionWidget> {
   }
 
   /// newText is used to calculate where to put the completion box
-  void _showOverlayTag(BuildContext context, String newText) async {
+  Future<void> _showOverlayTag(BuildContext context, String newText) async {
     // Code reference for overlay logic from MTECHVIRAL's video
     // https://www.youtube.com/watch?v=KuXKwjv2gTY
 
@@ -107,10 +117,9 @@ class _AutoCompletionWidgetState extends State<AutoCompletionWidget> {
 
     //print("Painter ${painter.width} $height");
 
-    var tags = ['Hello', 'Howdy', 'Pooper'];
     var list = Column(
       children: [
-        for (var tag in tags)
+        for (var tag in widget.tags)
           Padding(
             padding: const EdgeInsets.all(4.0),
             child: Text('#$tag', style: const TextStyle(fontSize: 20.0)),
@@ -137,7 +146,7 @@ class _AutoCompletionWidgetState extends State<AutoCompletionWidget> {
     Overlay.of(context)!.insert(overlayEntry!);
 
     // Removes the over lay entry from the Overly after 500 milliseconds
-    await Future.delayed(5000.milliseconds);
+    var _ = await Future.delayed(5000.milliseconds);
     _hideOverlay();
   }
 
@@ -199,6 +208,7 @@ bool enterPressed(String oldText, String newText, int cursorPos) {
 //        or an existing wiki link which has the closing brackets
 // Bug  : Show auto-completion on top if no space at the bottom
 // Bug  : Handle physical tab or Enter key
+// Bug  : Fix the faulty colours
 
 /*
 abstract class AutoCompletionLogic {

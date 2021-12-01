@@ -1,4 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 
 import 'package:collection/collection.dart';
 import 'package:dart_git/utils/result.dart';
@@ -9,7 +17,7 @@ typedef OAuthCallback = void Function(GitHostException?);
 
 abstract class GitHost {
   void init(OAuthCallback oAuthCallback);
-  Future launchOAuthScreen();
+  Future<void> launchOAuthScreen();
 
   Future<Result<UserInfo>> getUserInfo();
   Future<Result<List<GitHostRepo>>> listRepos();
@@ -30,8 +38,11 @@ class UserInfo {
   });
 
   @override
-  String toString() =>
-      'UserInfo{name: "$name", email: "$email", username: "$username"}';
+  String toString() {
+    return kDebugMode
+        ? 'UserInfo{name: "$name", email: "$email", username: "$username"}'
+        : 'UserInfo{name: ${name.isNotEmpty}, email: ${email.isNotEmpty}, username: ${username.isNotEmpty}}';
+  }
 }
 
 class GitHostRepo {

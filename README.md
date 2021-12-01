@@ -12,27 +12,16 @@
   <a href="https://circleci.com/gh/GitJournal/GitJournal"><img alt="Build Status" src="https://circleci.com/gh/GitJournal/GitJournal.svg?style=svg"/></a>
   <a href="https://www.gnu.org/licenses/agpl-3.0"><img alt="License: AGPL v3" src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg"></a>
   </br>
-  <a href="http://paypal.me/visheshhanda"><img alt="Donate Paypal" src="https://img.shields.io/badge/Donate-Paypal-%231999de"></a>
-  <a href="https://github.com/sponsors/vHanda"><img alt="Sponsor via GitHub" src="https://img.shields.io/badge/Sponsor-Github-%235a353"></a>
-</p>
-
-<p align="center">
-  This project receives generous infrastructure support from
-  <a href="https://www.digitalocean.com/">
-    <img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_horizontal_blue.svg" width="91px">
-  </a>
+  <a href="https://api.reuse.software/info/github.com/GitJournal/GitJournal"><img alt="REUSE status" src="https://api.reuse.software/badge/github.com/GitJournal/GitJournal"></a>
+  <a href="https://github.com/sponsors/vHanda"><img alt="Donate via GitHub" src="https://img.shields.io/badge/Sponsor-Github-%235a353"></a>
+  </br>
+  <a href="https://en.cryptobadges.io/donate/bc1qe97tgx5sndlk6ynz0e7na0hseevwy5uydk369r"><img alt="Donate via Bitcoin" src="https://en.cryptobadges.io/badge/micro/bc1qe97tgx5sndlk6ynz0e7na0hseevwy5uydk369r"></a>
+  <a href="https://en.cryptobadges.io/donate/0xD4964e0E9A8Ca8A0be8db717690D888Aa5e92DcD"><img alt="Donate via Bitcoin" src="https://en.cryptobadges.io/badge/micro/0xD4964e0E9A8Ca8A0be8db717690D888Aa5e92DcD"></a>
 </p>
 
 # Summary
 
 GitJournal is a note taking app focused on privacy and data portability. It stores all its notes in a standardized Markdown + YAML header format (optional). The notes are stored in a Git Repo of your choice - GitHub / Gitlab / Custom-provider. This means you can easily self host or host your notes in one of the many [Git providers](./docs/git_hosts.md).
-
-Features -
-
-- Can be used with any Git Repository
-- Allows categorizing Notes based on Folders
-- No Account Required
-- Open source
 
 # Community
 

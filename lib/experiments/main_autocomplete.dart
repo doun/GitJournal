@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:gitjournal/editors/autocompletion_widget.dart';
@@ -12,13 +18,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'AutoCompleter'),
+      home: const MyHomePage(title: 'AutoCompleter'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, this.title}) : super(key: key);
+  const MyHomePage({Key? key, this.title}) : super(key: key);
 
   final String? title;
 
@@ -27,9 +33,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  FocusNode _focusNode = FocusNode();
-  GlobalKey _textFieldKey = GlobalKey();
-  TextStyle _textFieldStyle = const TextStyle(fontSize: 20);
+  final FocusNode _focusNode = FocusNode();
+  final GlobalKey _textFieldKey = GlobalKey();
+  final TextStyle _textFieldStyle = const TextStyle(fontSize: 20);
 
   TextEditingController? _textController;
 
@@ -56,6 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
       textFieldFocusNode: _focusNode,
       textController: _textController!,
       child: textField,
+      tags: const ['Hello', 'Howdy', 'Pooper'],
     );
     return Scaffold(
       appBar: AppBar(
@@ -63,7 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          child: Container(
+          child: SizedBox(
             child: textField,
             width: 400.0,
           ),

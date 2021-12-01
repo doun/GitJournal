@@ -1,17 +1,22 @@
-import 'dart:io';
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:universal_io/io.dart';
 
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/logger/logger.dart';
 
 class PublicKeyEditor extends StatelessWidget {
   final Key formKey;
   final TextEditingController _controller;
 
-  PublicKeyEditor(this.formKey, this._controller);
+  const PublicKeyEditor(this.formKey, this._controller);
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +29,7 @@ class PublicKeyEditor extends StatelessWidget {
     }
 
     val = val.trim();
-    if (!val.startsWith("ssh-") && !val.startsWith("ecdsa-")) {
+    if (!val.startsWith("ssh-")) {
       return tr("setup.keyEditors.public");
     }
     return null;
@@ -35,7 +40,7 @@ class PrivateKeyEditor extends StatelessWidget {
   final Key formKey;
   final TextEditingController _controller;
 
-  PrivateKeyEditor(this.formKey, this._controller);
+  const PrivateKeyEditor(this.formKey, this._controller);
 
   @override
   Widget build(BuildContext context) {
@@ -64,24 +69,24 @@ class KeyEditor extends StatelessWidget {
   final TextEditingController textEditingController;
   final String? Function(String?) validator;
 
-  KeyEditor(this.formKey, this.textEditingController, this.validator);
+  const KeyEditor(this.formKey, this.textEditingController, this.validator);
 
   @override
   Widget build(BuildContext context) {
-    var form = Form(
-      key: formKey,
-      child: Builder(builder: (context) {
-        return TextFormField(
-          textAlign: TextAlign.left,
-          maxLines: null,
-          style: Theme.of(context).textTheme.bodyText2,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          validator: validator,
-          controller: textEditingController,
-        );
-      }),
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-    );
+    var inputField = Builder(builder: (context) {
+      return TextFormField(
+        textAlign: TextAlign.left,
+        maxLines: null,
+        style: Theme.of(context).textTheme.bodyText2,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: validator,
+        controller: textEditingController,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+      );
+    });
 
     var screenSize = MediaQuery.of(context).size;
 
@@ -91,11 +96,10 @@ class KeyEditor extends StatelessWidget {
           constraints: BoxConstraints(
             maxHeight: screenSize.height / 4,
           ),
-          color: Theme.of(context).buttonColor,
           child: SingleChildScrollView(
             child: Container(
-              padding: const EdgeInsets.all(8.0),
-              child: form,
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: inputField,
             ),
           ),
         ),
@@ -110,10 +114,12 @@ class KeyEditor extends StatelessWidget {
     );
   }
 
-  void _pickAndLoadFile() async {
+  Future<void> _pickAndLoadFile() async {
     var result = await FilePicker.platform.pickFiles();
 
-    if (result != null) {
+    if (result != null &&
+        result.files.isNotEmpty &&
+        result.files.single.path != null) {
       var file = File(result.files.single.path!);
       try {
         var data = await file.readAsString();

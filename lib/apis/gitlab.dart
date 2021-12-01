@@ -1,15 +1,21 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/services.dart';
 
 import 'package:http/http.dart' as http;
+import 'package:universal_io/io.dart' show HttpHeaders;
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/logger/logger.dart';
 import 'githost.dart';
 
 // FIXME: Handle for edge cases of json.decode
@@ -18,7 +24,7 @@ class GitLab implements GitHost {
   static const _clientID =
       "faf33c3716faf05bfb701b1b31e36c83a23c3ec2d7161f4ff00fba2275524d09";
 
-  var _platform = const MethodChannel('gitjournal.io/git');
+  final _platform = const MethodChannel('gitjournal.io/git');
   String? _accessCode = "";
   var _stateOAuth = "";
 
@@ -60,12 +66,12 @@ class GitLab implements GitHost {
   }
 
   @override
-  Future launchOAuthScreen() async {
+  Future<void> launchOAuthScreen() async {
     _stateOAuth = _randomString(10);
 
     var url =
         "https://gitlab.com/oauth/authorize?client_id=$_clientID&response_type=token&state=$_stateOAuth&redirect_uri=gitjournal://login.oauth2";
-    return launch(url);
+    var _ = await launch(url);
   }
 
   @override
@@ -80,7 +86,7 @@ class GitLab implements GitHost {
         "https://gitlab.com/api/v4/projects?simple=true&membership=true&order_by=last_activity_at&access_token=$_accessCode");
 
     if (foundation.kDebugMode) {
-      print(toCurlCommand(url, {}));
+      Log.d(toCurlCommand(url, {}));
     }
 
     var response = await http.get(url);
@@ -95,11 +101,11 @@ class GitLab implements GitHost {
 
     List<dynamic> list = jsonDecode(response.body);
     var repos = <GitHostRepo>[];
-    list.forEach((dynamic d) {
+    for (var d in list) {
       var map = Map<String, dynamic>.from(d);
       var repo = repoFromJson(map);
       repos.add(repo);
-    });
+    }
 
     // FIXME: Sort these based on some criteria
     return Result(repos);

@@ -1,32 +1,23 @@
 /*
-Copyright 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * SPDX-FileCopyrightText: 2020-2021 Roland Fredenhagen <important@van-fredenhagen.de>
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'package:flutter/material.dart';
 
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gitjournal/settings/settings.dart';
+import 'package:gitjournal/settings/markdown_renderer_config.dart';
 import 'package:gitjournal/widgets/images/markdown_image.dart';
 import 'package:gitjournal/widgets/images/themable_image.dart';
 
 class ImageDetails extends StatefulWidget {
   final ThemableImage image;
   final String caption;
-  ImageDetails(this.image, this.caption);
+  const ImageDetails(this.image, this.caption);
 
   @override
   _ImageDetailsState createState() => _ImageDetailsState();
@@ -38,7 +29,7 @@ class _ImageDetailsState extends State<ImageDetails> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final settings = Provider.of<Settings>(context);
+    final settings = Provider.of<MarkdownRendererConfig>(context);
     final bg =
         theme.brightness == Brightness.dark ? Colors.black : Colors.white;
     final overlayColor = getOverlayBackgroundColor(context,

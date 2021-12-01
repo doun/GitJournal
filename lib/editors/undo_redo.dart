@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:math';
 
 import 'package:gitjournal/editors/common.dart';
@@ -12,7 +18,7 @@ import 'package:gitjournal/editors/common.dart';
 //        be just taken from this class
 //
 class UndoRedoStack {
-  var _versions = <TextEditorState>[];
+  final _versions = <TextEditorState>[];
   int _index = -1;
 
   /// Returns if UI should be redrawn

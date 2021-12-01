@@ -1,19 +1,39 @@
-import 'dart:io';
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 
+import 'package:dart_git/git.dart';
+import 'package:dart_git/utils/result.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/test.dart';
+import 'package:universal_io/io.dart' as io;
 
 import 'package:gitjournal/core/checklist.dart';
-import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder_fs.dart';
-import 'package:gitjournal/settings/settings.dart';
+import 'package:gitjournal/core/file/file.dart';
+import 'package:gitjournal/core/file/file_storage.dart';
+import 'package:gitjournal/core/folder/notes_folder_config.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
+import 'package:gitjournal/core/note_storage.dart';
 
 void main() {
   group('Note', () {
-    late Directory tempDir;
+    late String repoPath;
+    late io.Directory tempDir;
+    late NotesFolderConfig config;
+    late FileStorage fileStorage;
+
+    final storage = NoteStorage();
 
     setUpAll(() async {
-      tempDir = await Directory.systemTemp.createTemp('__notes_test__');
+      tempDir = await io.Directory.systemTemp.createTemp('__notes_test__');
+      repoPath = tempDir.path + p.separator;
+
+      SharedPreferences.setMockInitialValues({});
+      config = NotesFolderConfig('', await SharedPreferences.getInstance());
+      fileStorage = await FileStorage.fake(repoPath);
     });
 
     tearDownAll(() async {
@@ -38,12 +58,12 @@ How are you doing?
 Booga Wooga
 """;
 
-      var notePath = p.join(tempDir.path, "note.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
       var items = checklist.items;
@@ -73,7 +93,7 @@ Booga Wooga
 
       checklist.removeItem(checklist.items[4]);
 
-      await checklist.note.save();
+      await NoteStorage().save(checklist.note).throwOnError();
 
       var expectedContent = """---
 bar: Foo
@@ -92,7 +112,7 @@ How are you doing?
 Booga Wooga
 """;
 
-      var actualContent = File(notePath).readAsStringSync();
+      var actualContent = io.File(noteFullPath).readAsStringSync();
       expect(actualContent, equals(expectedContent));
     });
 
@@ -102,12 +122,12 @@ Booga Wooga
 - [x] item 2
 - [x] item 3""";
 
-      var notePath = p.join(tempDir.path, "note2.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note2.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note2.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
       var items = checklist.items;
@@ -117,12 +137,12 @@ Booga Wooga
     test('Should add \\n before item when adding', () async {
       var content = "Hi.";
 
-      var notePath = p.join(tempDir.path, "note3.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note3.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note3.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
       var items = checklist.items;
@@ -138,12 +158,12 @@ Booga Wooga
     test('Should not add \\n when adding after item', () async {
       var content = "- [ ] one";
 
-      var notePath = p.join(tempDir.path, "note13.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note13.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note13.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
       var items = checklist.items;
@@ -158,12 +178,12 @@ Booga Wooga
     test('insertItem works', () async {
       var content = "Hi.\n- [ ] One\n- Two\n- [ ] Three";
 
-      var notePath = p.join(tempDir.path, "note4.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note4.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note4.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
       var items = checklist.items;
@@ -178,12 +198,12 @@ Booga Wooga
     test('Does not Remove empty trailing items', () async {
       var content = "Hi.\n- [ ] One\n- Two\n- [ ]  \n- [ ]  ";
 
-      var notePath = p.join(tempDir.path, "note4.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note4.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note4.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
 
@@ -194,12 +214,12 @@ Booga Wooga
     test('Does not add extra new line', () async {
       var content = "- [ ] One\n- [ ]Two\n- [ ] Three\n- [ ]Four\n";
 
-      var notePath = p.join(tempDir.path, "note449.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note449.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note449.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
       checklist.addItem(checklist.buildItem(false, "Five"));
@@ -212,12 +232,12 @@ Booga Wooga
     test('Maintain x case', () async {
       var content = "- [X] One\n- [ ] Two";
 
-      var notePath = p.join(tempDir.path, "note448.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note448.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note448.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
 
@@ -228,12 +248,12 @@ Booga Wooga
     test('Migrate from old checklist format', () async {
       var content = "[X] One\n[ ] Two";
 
-      var notePath = p.join(tempDir.path, "note448.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note448.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note448.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
 
@@ -244,12 +264,12 @@ Booga Wooga
     test('Empty Checklist', () async {
       var content = "[X] One\n";
 
-      var notePath = p.join(tempDir.path, "note449.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note449.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note449.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
       checklist.removeAt(0);
@@ -261,12 +281,12 @@ Booga Wooga
     test('Checklist Header only', () async {
       var content = "#Title\n[X] One\n";
 
-      var notePath = p.join(tempDir.path, "note429.md");
-      await File(notePath).writeAsString(content);
+      var noteFullPath = p.join(repoPath, "note429.md");
+      await io.File(noteFullPath).writeAsString(content);
 
-      var parentFolder = NotesFolderFS(null, tempDir.path, Settings(''));
-      var note = Note(parentFolder, notePath);
-      await note.load();
+      var parentFolder = NotesFolderFS.root(config, fileStorage);
+      var file = File.short("note429.md", repoPath);
+      var note = await storage.load(file, parentFolder).getOrThrow();
 
       var checklist = Checklist(note);
       checklist.removeAt(0);

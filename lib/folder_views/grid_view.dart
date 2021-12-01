@@ -1,7 +1,13 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
+import 'package:gitjournal/core/folder/notes_folder.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder.dart';
 import 'package:gitjournal/folder_views/card_view.dart';
 
 class GridFolderView extends StatelessWidget {
@@ -10,11 +16,11 @@ class GridFolderView extends StatelessWidget {
   final NoteBoolPropertyFunction isNoteSelected;
 
   final NotesFolder folder;
-  final String emptyText;
+  final String? emptyText;
 
   final String searchTerm;
 
-  GridFolderView({
+  const GridFolderView({
     required this.folder,
     required this.noteTapped,
     required this.noteLongPressed,

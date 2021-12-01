@@ -1,7 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:async';
 import 'dart:isolate';
 
-import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/material.dart';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -11,10 +16,10 @@ import 'package:stack_trace/stack_trace.dart';
 
 import 'package:gitjournal/app.dart';
 import 'package:gitjournal/error_reporting.dart';
-import 'package:gitjournal/settings/app_settings.dart';
+import 'package:gitjournal/settings/app_config.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> main() async {
+  var _ = WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
   EasyLocalization.logger.enableLevels = [
     LevelMessages.error,
@@ -22,9 +27,8 @@ void main() async {
   ];
 
   var pref = await SharedPreferences.getInstance();
-  AppSettings.instance.load(pref);
+  AppConfig.instance.load(pref);
 
-  JournalApp.isInDebugMode = foundation.kDebugMode;
   FlutterError.onError = flutterOnErrorHandler;
 
   Isolate.current.addErrorListener(RawReceivePort((dynamic pair) async {

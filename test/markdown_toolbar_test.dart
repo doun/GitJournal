@@ -1,8 +1,14 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:test/test.dart';
 
-import 'package:gitjournal/widgets/markdown_toolbar.dart';
+import 'package:gitjournal/editors/markdown_toolbar.dart';
 
 void main() {
   void _testLine({
@@ -197,6 +203,22 @@ void main() {
     );
   });
 
+  test("Word selection", () {
+    var val = const TextEditingValue(
+      text: 'Hello\nHydra Person',
+      selection: TextSelection(baseOffset: 6, extentOffset: 11),
+    );
+
+    var newVal = modifyCurrentWord(val, '**');
+
+    expect(newVal.text, 'Hello\n**Hydra** Person');
+    expect(newVal.selection.baseOffset, 6);
+    expect(newVal.selection.extentOffset, 15);
+
+    var newVal2 = modifyCurrentWord(newVal, '**');
+    expect(newVal2, val);
+  });
+
   //
   // Navigation
   //
@@ -226,6 +248,22 @@ void main() {
 
     _testPrevWord(text, 3, 0);
     _testPrevWord(text, 5, 0);
+  });
+
+  test('Navigation with spaces', () {
+    const text = ' Hello ';
+
+    _testNextWord(text, 0, 1);
+    _testNextWord(text, 3, 6);
+    _testNextWord(text, 6, 7);
+    _testNextWord(text, 7, 7);
+    _testNextWord(text, 8, 7);
+
+    _testPrevWord(text, 0, 0);
+    _testPrevWord(text, 1, 0);
+    _testPrevWord(text, 3, 1);
+    _testPrevWord(text, 6, 1);
+    _testPrevWord(text, 7, 6);
   });
 
   test('Navigation with multiple words', () {
@@ -367,6 +405,4 @@ void main() {
       afterOffset: 1,
     );
   });
-
-  // TODO: Test that if some text is selected then it should be modified
 }

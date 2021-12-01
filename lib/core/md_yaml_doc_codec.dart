@@ -1,9 +1,15 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'dart:collection';
 
 import 'package:yaml/yaml.dart';
 import 'package:yaml_serializer/yaml_serializer.dart';
 
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/logger/logger.dart';
 import 'md_yaml_doc.dart';
 
 class MarkdownYAMLCodec {

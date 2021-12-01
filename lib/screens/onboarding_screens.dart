@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:auto_size_text/auto_size_text.dart';
@@ -9,10 +15,13 @@ import 'package:provider/provider.dart';
 import 'package:time/time.dart';
 
 import 'package:gitjournal/analytics/analytics.dart';
-import 'package:gitjournal/settings/app_settings.dart';
+import 'package:gitjournal/screens/home_screen.dart';
+import 'package:gitjournal/settings/app_config.dart';
 
 class OnBoardingScreen extends StatefulWidget {
-  OnBoardingScreen();
+  static const routePath = "/onBoarding";
+
+  const OnBoardingScreen();
 
   @override
   OnBoardingScreenState createState() {
@@ -133,12 +142,11 @@ class OnBoardingScreenState extends State<OnBoardingScreen> {
   }
 
   void _finish() {
-    var appSettings = Provider.of<AppSettings>(context, listen: false);
-    appSettings.onBoardingCompleted = true;
-    appSettings.save();
+    var appConfig = Provider.of<AppConfig>(context, listen: false);
+    appConfig.onBoardingCompleted = true;
+    appConfig.save();
 
-    Navigator.pop(context);
-    Navigator.pushNamed(context, "/");
+    var _ = Navigator.popAndPushNamed(context, HomeScreen.routePath);
   }
 
   void _nextPage() {
@@ -153,7 +161,7 @@ class OnBoardingBottomButton extends StatelessWidget {
   final Func0<void> onPressed;
   final String text;
 
-  OnBoardingBottomButton({
+  const OnBoardingBottomButton({
     Key? key,
     required this.text,
     required this.onPressed,
@@ -196,21 +204,19 @@ class OnBoardingPage1 extends StatelessWidget {
       ],
     );
 
-    return Container(
-      child: Column(
-        children: <Widget>[
-          Center(child: header),
-          const SizedBox(height: 64.0),
-          AutoSizeText(
-            tr("OnBoarding.subtitle"),
-            style: textTheme.headline5,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-          ),
-        ],
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-      ),
+    return Column(
+      children: <Widget>[
+        Center(child: header),
+        const SizedBox(height: 64.0),
+        AutoSizeText(
+          tr("OnBoarding.subtitle"),
+          style: textTheme.headline5,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+        ),
+      ],
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
     );
   }
 }
@@ -232,21 +238,19 @@ class OnBoardingPage2 extends StatelessWidget {
       ],
     );
 
-    return Container(
-      child: Column(
-        children: <Widget>[
-          Center(child: header),
-          const SizedBox(height: 64.0),
-          AutoSizeText(
-            tr("OnBoarding.page2"),
-            style: textTheme.headline5,
-            textAlign: TextAlign.center,
-            maxLines: 3,
-          ),
-        ],
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-      ),
+    return Column(
+      children: <Widget>[
+        Center(child: header),
+        const SizedBox(height: 64.0),
+        AutoSizeText(
+          tr("OnBoarding.page2"),
+          style: textTheme.headline5,
+          textAlign: TextAlign.center,
+          maxLines: 3,
+        ),
+      ],
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
     );
   }
 }
@@ -268,21 +272,19 @@ class OnBoardingPage3 extends StatelessWidget {
       ],
     );
 
-    return Container(
-      child: Column(
-        children: <Widget>[
-          Center(child: header),
-          const SizedBox(height: 64.0),
-          AutoSizeText(
-            tr("OnBoarding.page3"),
-            style: textTheme.headline5,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-          ),
-        ],
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-      ),
+    return Column(
+      children: <Widget>[
+        Center(child: header),
+        const SizedBox(height: 64.0),
+        AutoSizeText(
+          tr("OnBoarding.page3"),
+          style: textTheme.headline5,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+        ),
+      ],
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
     );
   }
 }

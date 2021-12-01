@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 
 import 'package:gitjournal/apis/api_fakes.dart';
@@ -5,6 +11,7 @@ import 'package:gitjournal/apis/githost_factory.dart';
 import 'package:gitjournal/setup/autoconfigure.dart';
 import 'package:gitjournal/setup/clone_url.dart';
 import 'package:gitjournal/setup/error.dart';
+import 'package:gitjournal/setup/fakes/clone_fake.dart';
 import 'package:gitjournal/setup/loading.dart';
 import 'package:gitjournal/setup/repo_selector.dart';
 import 'package:gitjournal/setup/screens.dart';
@@ -34,7 +41,7 @@ Widget autoConfigure() {
     padding: const EdgeInsets.all(16.0),
     child: GitHostSetupAutoConfigurePage(
       gitHostType: GitHostType.GitHub,
-      onDone: (host, userInfo) => null,
+      onDone: (host, userInfo) {},
     ),
   );
 }
@@ -44,15 +51,15 @@ Widget cloneUrl() {
     padding: const EdgeInsets.all(16.0),
     child: GitCloneUrlPage(
       initialValue: "foo?",
-      doneFunction: (val) => null,
+      doneFunction: (val) {},
     ),
   );
 }
 
 // FIXME: Create widgets for all the errors!
 Widget loadingError() {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
+  return const Padding(
+    padding: EdgeInsets.all(16.0),
     child: GitHostSetupErrorPage(
       "This is an error message",
     ),
@@ -61,8 +68,8 @@ Widget loadingError() {
 
 // FIXME: Create widgets for all the loading screen messages!
 Widget loading() {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
+  return const Padding(
+    padding: EdgeInsets.all(16.0),
     child: GitHostSetupLoadingPage(
       "Loading Message",
     ),
@@ -128,6 +135,13 @@ Widget repoSelector() {
       ),
       onDone: (_) {},
     ),
+  );
+}
+
+Widget cloning() {
+  return const Padding(
+    padding: EdgeInsets.all(16.0),
+    child: FakeTransferProgress(),
   );
 }
 

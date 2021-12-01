@@ -1,9 +1,12 @@
 // ignore_for_file: unnecessary_null_comparison, curly_braces_in_flow_control_structures
 // vHanda: Added onLongPressed
 
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+/*
+ * SPDX-FileCopyrightText: 2014 The Flutter Authors
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'dart:math' as math;
 
@@ -17,6 +20,9 @@ import 'package:flutter/widgets.dart';
 const double _kMinButtonSize = kMinInteractiveDimension;
 
 /// A material design icon button.
+///
+///   The FORK adds onLongPressed and wraps it in Material because of
+///   https://github.com/flutter/flutter/issues/30658
 ///
 /// An icon button is a picture printed on a [Material] widget that reacts to
 /// touches by filling with color (ink).
@@ -371,7 +377,7 @@ class IconButton extends StatelessWidget {
       );
     }
 
-    return Semantics(
+    var sem = Semantics(
       button: true,
       enabled: onPressed != null,
       child: InkResponse(
@@ -395,6 +401,7 @@ class IconButton extends StatelessWidget {
             ),
       ),
     );
+    return Material(child: sem);
   }
 
   @override

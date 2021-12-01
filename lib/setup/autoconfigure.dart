@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2019-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -8,8 +14,9 @@ import 'package:provider/provider.dart';
 import 'package:gitjournal/analytics/analytics.dart';
 import 'package:gitjournal/apis/githost_factory.dart';
 import 'package:gitjournal/error_reporting.dart';
-import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/utils/logger.dart';
+import 'package:gitjournal/generated/locale_keys.g.dart';
+import 'package:gitjournal/logger/logger.dart';
+import 'package:gitjournal/settings/git_config.dart';
 import 'button.dart';
 import 'error.dart';
 import 'loading.dart';
@@ -18,10 +25,11 @@ class GitHostSetupAutoConfigurePage extends StatefulWidget {
   final GitHostType gitHostType;
   final Func2<GitHost?, UserInfo?, void> onDone;
 
-  GitHostSetupAutoConfigurePage({
+  const GitHostSetupAutoConfigurePage({
     required this.gitHostType,
     required this.onDone,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   GitHostSetupAutoConfigurePageState createState() {
@@ -35,9 +43,9 @@ class GitHostSetupAutoConfigurePageState
   String errorMessage = "";
 
   bool _configuringStarted = false;
-  String _message = tr('setup.autoconfigure.waitPerm');
+  String _message = tr(LocaleKeys.setup_autoconfigure_waitPerm);
 
-  void _startAutoConfigure() async {
+  Future<void> _startAutoConfigure() async {
     Log.d("Starting autoconfigure");
     setState(() {
       _configuringStarted = true;
@@ -58,23 +66,36 @@ class GitHostSetupAutoConfigurePageState
         }
         Log.d("GitHost Initalized: " + widget.gitHostType.toString());
 
+        if (!mounted) {
+          Log.d("AutoConfigure not mounted any more");
+          return;
+        }
+
         UserInfo? userInfo;
         try {
           setState(() {
-            _message = tr('setup.autoconfigure.readUser');
+            _message = tr(LocaleKeys.setup_autoconfigure_readUser);
           });
 
+          Log.d("Starting to fetch userInfo");
           userInfo = await gitHost!.getUserInfo().getOrThrow();
-          var settings = Provider.of<Settings>(context, listen: false);
+          Log.d("Got UserInfo - $userInfo");
+
+          var gitConfig = Provider.of<GitConfig>(context, listen: false);
           if (userInfo.name.isNotEmpty) {
-            settings.gitAuthor = userInfo.name;
+            gitConfig.gitAuthor = userInfo.name;
+          } else if (userInfo.username.isNotEmpty) {
+            gitConfig.gitAuthor = userInfo.username;
           }
           if (userInfo.email.isNotEmpty) {
-            settings.gitAuthorEmail = userInfo.email;
+            gitConfig.gitAuthorEmail = userInfo.email;
           }
-          settings.save();
+          gitConfig.save();
         } on Exception catch (e, stacktrace) {
           _handleGitHostException(e, stacktrace);
+          return;
+        } on Error catch (e, stacktrace) {
+          _handleGitHostException(Exception(e.toString()), stacktrace);
           return;
         }
         Log.i('Got User Info: $userInfo');
@@ -90,11 +111,14 @@ class GitHostSetupAutoConfigurePageState
       }
     } on Exception catch (e, stacktrace) {
       _handleGitHostException(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      _handleGitHostException(Exception(e.toString()), stacktrace);
+      return;
     }
   }
 
   void _handleGitHostException(Exception e, StackTrace stacktrace) {
-    Log.d("GitHostSetupAutoConfigure: " + e.toString());
+    Log.e("GitHostSetupAutoConfigure", ex: e, stacktrace: stacktrace);
     setState(() {
       errorMessage = widget.gitHostType.toString() + ": " + e.toString();
       logEvent(
@@ -123,29 +147,29 @@ class GitHostSetupAutoConfigurePageState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          tr('setup.autoconfigure.title'),
+          tr(LocaleKeys.setup_autoconfigure_title),
           style: Theme.of(context).textTheme.headline6,
         ),
         const SizedBox(height: 32.0),
 
         // Step 1
         Text(
-          tr('setup.autoconfigure.step1'),
+          tr(LocaleKeys.setup_autoconfigure_step1),
           style: Theme.of(context).textTheme.bodyText1,
         ),
         const SizedBox(height: 8.0),
         Text(
-          tr('setup.autoconfigure.step2'),
+          tr(LocaleKeys.setup_autoconfigure_step2),
           style: Theme.of(context).textTheme.bodyText1,
         ),
         const SizedBox(height: 8.0),
         Text(
-          tr('setup.autoconfigure.step3'),
+          tr(LocaleKeys.setup_autoconfigure_step3),
           style: Theme.of(context).textTheme.bodyText1,
         ),
         const SizedBox(height: 32.0),
         Text(
-          tr('setup.autoconfigure.warning'),
+          tr(LocaleKeys.setup_autoconfigure_warning),
           style: Theme.of(context).textTheme.bodyText1!.copyWith(
                 fontStyle: FontStyle.italic,
               ),
@@ -153,7 +177,7 @@ class GitHostSetupAutoConfigurePageState
         const SizedBox(height: 32.0),
 
         GitHostSetupButton(
-          text: tr('setup.autoconfigure.authorize'),
+          text: tr(LocaleKeys.setup_autoconfigure_authorize),
           onPressed: _startAutoConfigure,
         ),
       ],

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 Vishesh Handa <me@vhanda.in>
+#
+# SPDX-License-Identifier: CC0-1.0
+
 # Miscellaneous
 *.class
 *.log
@@ -54,11 +58,12 @@ gj_common
 debugSymbols
 .externalNativeBuild
 
-# Monarch related
-.monarch/
-
 # Legacy Eclipse project files
 .settings/
 .classpath
 .project
 .cproject
+
+# Linux Building
+/AppDir
+appimage-builder-cache/

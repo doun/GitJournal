@@ -1,45 +1,34 @@
 /*
-Copyright 2020-2021 Vishesh Handa <me@vhanda.in>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ * SPDX-FileCopyrightText: 2020-2021 Vishesh Handa <me@vhanda.in>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import 'package:path/path.dart' as p;
 
+import 'package:gitjournal/core/folder/notes_folder.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/core/link.dart';
 import 'package:gitjournal/core/note.dart';
-import 'package:gitjournal/core/notes_folder_fs.dart';
 
 class LinkResolver {
   final Note inputNote;
+  final NotesFolderConfig folderConfig;
 
-  LinkResolver(this.inputNote);
+  LinkResolver(this.inputNote) : folderConfig = inputNote.parent.config;
 
   Note? resolveLink(Link l) {
     if (l.isWikiLink) {
       return resolveWikiLink(l.wikiTerm!);
     }
 
-    var rootFolder = inputNote.parent.rootFolder;
-    if (l.filePath!.startsWith(rootFolder.folderPath)) {
-      var spec = l.filePath!.substring(rootFolder.folderPath.length);
-      if (spec.startsWith('/')) {
-        spec = spec.substring(1);
-      }
-      return _getNoteWithSpec(rootFolder, spec);
+    var spec = l.filePath!;
+    if (spec.startsWith('/')) {
+      spec = spec.substring(1);
     }
 
-    return null;
+    var rootFolder = inputNote.parent.rootFolder;
+    return _getNoteWithSpec(rootFolder, spec);
   }
 
   Note? resolve(String link) {
@@ -72,8 +61,8 @@ class LinkResolver {
       var fileName = note.fileName;
       var fileNameLower = fileName.toLowerCase();
 
-      for (var ext in NoteFileFormatInfo.allowedExtensions) {
-        if (fileNameLower.endsWith(ext)) {
+      for (var ext in folderConfig.allowedFileExts) {
+        if (p.extension(fileNameLower) == ext) {
           var termEndsWithSameExt = lowerCaseTerm.endsWith(ext);
           if (termEndsWithSameExt) {
             if (fileName == term) {
@@ -95,24 +84,18 @@ class LinkResolver {
   }
 
   Note? _getNoteWithSpec(NotesFolderFS folder, String spec) {
-    var fullPath = p.normalize(p.join(folder.folderPath, spec));
-    if (!fullPath.startsWith(folder.folderPath)) {
-      folder = folder.rootFolder;
-    }
-
-    assert(fullPath.length != folder.folderPath.length);
-    if (fullPath.length == folder.folderPath.length) {
-      // FIXME: Why is this case occurring?
-      return null;
-    }
-    spec = fullPath.substring(folder.folderPath.length + 1);
+    spec = p.normalize(p.join(folder.folderPath, spec));
+    folder = folder.rootFolder;
 
     var linkedNote = folder.getNoteWithSpec(spec);
     if (linkedNote != null) {
       return linkedNote;
     }
 
-    for (var ext in NoteFileFormatInfo.allowedExtensions) {
+    for (var ext in folderConfig.allowedFileExts) {
+      if (ext.isEmpty) {
+        continue;
+      }
       if (!spec.endsWith(ext)) {
         linkedNote = folder.getNoteWithSpec(spec + ext);
         if (linkedNote != null) {
